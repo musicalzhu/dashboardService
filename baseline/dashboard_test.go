@@ -2,8 +2,32 @@ package baseline
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func allServiceCombinations() []Server {
+	serviceTypes := []ServiceType{AS, TS, SS, DS}
+	servers := make([]Server, 0, (1<<len(serviceTypes))-1)
+	for mask := 1; mask < 1<<len(serviceTypes); mask++ {
+		var services []Service
+		var names []string
+		for bit, serviceType := range serviceTypes {
+			if mask&(1<<(len(serviceTypes)-1-bit)) == 0 {
+				continue
+			}
+			services = append(services, Service{ServiceType: serviceType, State: StateNormal})
+			names = append(names, string(serviceType))
+		}
+		servers = append(servers, Server{
+			Name:     strings.Join(names, "+"),
+			IP:       "1.1.1.1",
+			State:    StateNormal,
+			Services: services,
+		})
+	}
+	return servers
+}
 
 // TestEmptyInputReturnsEmptyGroups 验证空输入返回非 nil 空切片。
 func TestEmptyInputReturnsEmptyGroups(t *testing.T) {
@@ -50,7 +74,7 @@ func TestGroupByRejectsReservedNegativeKeys(t *testing.T) {
 
 // TestAllRulesPreserveTheExpectedGroupingSemantics 为所有分发方案验证共享规则行为。
 func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
-	servers := AllServiceCombinations()
+	servers := allServiceCombinations()
 	expectedNames := map[GroupRule][]string{
 		RuleExactCombination: {
 			"AS+TS+SS+DS", "AS+TS+SS", "AS+TS+DS", "AS+TS",

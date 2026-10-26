@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"dashboardService/baseline"
 )
 
 // main 展示五种规则在同一组输入数据上的分组与排序差异。
 func main() {
-	servers := baseline.AllServiceCombinations()
+	servers := allServiceCombinations()
 	servers = append(servers,
 		baseline.Server{
 			Name: "unknown-service-node",
@@ -37,4 +38,30 @@ func main() {
 			fmt.Println()
 		}
 	}
+}
+
+func allServiceCombinations() []baseline.Server {
+	serviceTypes := []baseline.ServiceType{baseline.AS, baseline.TS, baseline.SS, baseline.DS}
+	servers := make([]baseline.Server, 0, (1<<len(serviceTypes))-1)
+	for mask := 1; mask < 1<<len(serviceTypes); mask++ {
+		var services []baseline.Service
+		var names []string
+		for bit, serviceType := range serviceTypes {
+			if mask&(1<<(len(serviceTypes)-1-bit)) == 0 {
+				continue
+			}
+			services = append(services, baseline.Service{
+				ServiceType: serviceType,
+				State:       baseline.StateNormal,
+			})
+			names = append(names, string(serviceType))
+		}
+		servers = append(servers, baseline.Server{
+			Name:     strings.Join(names, "+"),
+			IP:       "1.1.1.1",
+			State:    baseline.StateNormal,
+			Services: services,
+		})
+	}
+	return servers
 }

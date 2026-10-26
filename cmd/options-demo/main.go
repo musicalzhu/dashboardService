@@ -18,14 +18,14 @@ func main() {
 		return
 	}
 
-	servers := baseline.AllServiceCombinations()
-	servers = append(servers,
-		baseline.Server{
-			Name:     "unknown-service-node",
-			Services: []baseline.Service{{ServiceType: baseline.ServiceType("XX"), State: baseline.SvcNormal}},
-		},
-		baseline.Server{Name: "no-service-node"},
-	)
+	servers := []baseline.Server{
+		{Name: "as-node", Services: []baseline.Service{{ServiceType: baseline.AS, State: baseline.SvcNormal}}},
+		{Name: "ts-node", Services: []baseline.Service{{ServiceType: baseline.TS, State: baseline.SvcNormal}}},
+		{Name: "unknown-service-node", Services: []baseline.Service{
+			{ServiceType: baseline.ServiceType("XX"), State: baseline.SvcNormal},
+		}},
+		{Name: "no-service-node"},
+	}
 	for _, group := range grouping.Apply(servers) {
 		fmt.Printf("%-12s (%d servers):", group.Name, len(group.Servers))
 		for _, server := range group.Servers {

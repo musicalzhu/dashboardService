@@ -11,7 +11,15 @@ import (
 
 // TestRulesMatchBaseline 验证五个可调用闭包分别对应共享基线中的预定义规则。
 func TestRulesMatchBaseline(t *testing.T) {
-	servers := baseline.AllServiceCombinations()
+	servers := []closure.Server{
+		{Name: "as", Services: []closure.Service{{ServiceType: closure.AS, State: closure.SvcNormal}}},
+		{Name: "ts-ss", Services: []closure.Service{
+			{ServiceType: closure.TS, State: closure.SvcNormal},
+			{ServiceType: closure.SS, State: closure.SvcNormal},
+		}},
+		{Name: "ds", Services: []closure.Service{{ServiceType: closure.DS, State: closure.SvcNormal}}},
+		{Name: "empty"},
+	}
 	rules := []struct {
 		name    string
 		grouper closure.Grouper

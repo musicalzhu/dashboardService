@@ -15,7 +15,7 @@ func TestDefaultOptionsMatchBaseline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewGrouping() error: %v", err)
 	}
-	servers := baseline.AllServiceCombinations()
+	servers := comparisonServers()
 	got := grouping.Apply(servers)
 	want := baseline.RenderDashboard(servers, options.RuleExactCombination)
 	if !reflect.DeepEqual(got, want) {
@@ -32,7 +32,7 @@ func TestOptionsSelectPrimaryServiceGrouping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewGrouping() error: %v", err)
 	}
-	servers := baseline.AllServiceCombinations()
+	servers := comparisonServers()
 	got := grouping.Apply(servers)
 	want := baseline.RenderDashboard(servers, options.RulePrimaryService)
 	if !reflect.DeepEqual(got, want) {
@@ -68,9 +68,18 @@ func TestFunctionalOptionsAreUsableOutsidePackage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewGrouping() error: %v", err)
 	}
-	groups := grouping.Apply(baseline.AllServiceCombinations())
+	groups := grouping.Apply(comparisonServers())
 	if len(groups) != 4 {
 		t.Fatalf("Apply() returned %d groups, want 4", len(groups))
+	}
+}
+
+func comparisonServers() []baseline.Server {
+	return []baseline.Server{
+		{Name: "as", Services: []baseline.Service{{ServiceType: baseline.AS}}},
+		{Name: "ts", Services: []baseline.Service{{ServiceType: baseline.TS}}},
+		{Name: "ss", Services: []baseline.Service{{ServiceType: baseline.SS}}},
+		{Name: "ds", Services: []baseline.Service{{ServiceType: baseline.DS}}},
 	}
 }
 

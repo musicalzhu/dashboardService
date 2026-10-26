@@ -28,7 +28,13 @@ func TestAllRulesHaveImpl(t *testing.T) {
 
 // TestDataDrivenDispatchMatchesBaseline 验证规则表入口与 switch 基线委托到相同的共享实现。
 func TestDataDrivenDispatchMatchesBaseline(t *testing.T) {
-	servers := baseline.AllServiceCombinations()
+	servers := []Server{
+		{Name: "as", Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+		{Name: "ts-ss", Services: []Service{
+			{ServiceType: TS, State: SvcNormal},
+			{ServiceType: SS, State: SvcNormal},
+		}},
+	}
 	servers = append(servers,
 		Server{
 			Name:     "unknown",

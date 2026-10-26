@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	"dashboardService/baseline"
 	"dashboardService/datadriven"
 )
 
@@ -12,19 +11,17 @@ import (
 // 演示输入含全部 15 种非空服务组合、一台未知类型服务服务器和一台无服务服务器；
 // 因此运行结果也能直观看到两种特殊分组都被保留。
 func main() {
-	servers := baseline.AllServiceCombinations()
-	servers = append(servers,
-		datadriven.Server{
-			Name: "unknown-service-node",
-			Services: []datadriven.Service{
-				{ServiceType: datadriven.ServiceType("XX"), State: datadriven.SvcNormal},
-			},
-		},
-		datadriven.Server{
-			Name: "no-service-node",
-			IP:   "192.168.1.200",
-		},
-	)
+	servers := []datadriven.Server{
+		{Name: "as-node", Services: []datadriven.Service{{ServiceType: datadriven.AS, State: datadriven.SvcNormal}}},
+		{Name: "ts-ss-node", Services: []datadriven.Service{
+			{ServiceType: datadriven.TS, State: datadriven.SvcNormal},
+			{ServiceType: datadriven.SS, State: datadriven.SvcNormal},
+		}},
+		{Name: "unknown-service-node", Services: []datadriven.Service{
+			{ServiceType: datadriven.ServiceType("XX"), State: datadriven.SvcNormal},
+		}},
+		{Name: "no-service-node", IP: "192.168.1.200"},
+	}
 
 	rules := []datadriven.GroupRule{
 		datadriven.RuleExactCombination,

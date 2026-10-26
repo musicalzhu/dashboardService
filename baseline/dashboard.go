@@ -5,13 +5,6 @@ import (
 	"slices"
 )
 
-// Group 表示一个服务分组。Key 仅供程序内部使用，不写入 JSON。
-type Group struct {
-	Key     int      `json:"-"`
-	Name    string   `json:"name"`
-	Servers []Server `json:"servers"`
-}
-
 const (
 	noServiceGroupName      = "无服务"
 	unknownServiceGroupName = "未知服务"
