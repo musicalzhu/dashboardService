@@ -35,22 +35,13 @@ func compareServiceStatus(a, b *Service) int {
 	case b == nil:
 		return -1
 	}
-	if a.State == b.State {
-		return 0
-	}
-	if a.State == SvcNormal {
-		return -1
-	}
-	return 1
+	return compareState(a.State, b.State)
 }
 
 // compareServers 在同组内按服务器状态、各服务状态、IP、Name 排序。
 func compareServers(a, b Server) int {
-	if a.State != b.State {
-		if a.State == SrvNormal {
-			return -1
-		}
-		return 1
+	if c := compareState(a.State, b.State); c != 0 {
+		return c
 	}
 	for _, serviceType := range allServiceTypes {
 		if c := compareServiceStatus(findService(&a, serviceType), findService(&b, serviceType)); c != 0 {
@@ -61,6 +52,26 @@ func compareServers(a, b Server) int {
 		return c
 	}
 	return strings.Compare(a.Name, b.Name)
+}
+
+func compareState(a, b State) int {
+	if a == b {
+		return 0
+	}
+	rank := func(state State) int {
+		switch state {
+		case StateNormal:
+			return 0
+		case StateAbnormal:
+			return 1
+		default:
+			return 2
+		}
+	}
+	if rankA, rankB := rank(a), rank(b); rankA != rankB {
+		return rankA - rankB
+	}
+	return strings.Compare(string(a), string(b))
 }
 
 // cmpByMaskDesc 按组合 mask 降序排列，高优先级组合在前。

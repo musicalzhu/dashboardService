@@ -186,12 +186,30 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 			want: []string{"normal", "abnormal"},
 		},
 		{
+			name: "unknown server states have a consistent order",
+			servers: []Server{
+				{Name: "state-z", State: State("maintenance-z"), Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+				{Name: "state-abnormal", State: SrvAbnormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+				{Name: "state-a", State: State("maintenance-a"), Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+			},
+			want: []string{"state-abnormal", "state-a", "state-z"},
+		},
+		{
 			name: "service state",
 			servers: []Server{
 				{Name: "abnormal-service", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcAbnormal}}},
 				{Name: "normal-service", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
 			},
 			want: []string{"normal-service", "abnormal-service"},
+		},
+		{
+			name: "unknown service states have a consistent order",
+			servers: []Server{
+				{Name: "state-z", State: SrvNormal, Services: []Service{{ServiceType: AS, State: State("maintenance-z")}}},
+				{Name: "state-abnormal", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcAbnormal}}},
+				{Name: "state-a", State: SrvNormal, Services: []Service{{ServiceType: AS, State: State("maintenance-a")}}},
+			},
+			want: []string{"state-abnormal", "state-a", "state-z"},
 		},
 		{
 			name: "service presence",
