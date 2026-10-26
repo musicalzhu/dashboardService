@@ -1,8 +1,9 @@
 # POC 共享核心与 switch 基线
 
-`baseline` 同时是朴素 switch 规则分发方案，也是四种分发 POC 的共享核心。数据模型、
+`baseline` 同时是朴素 switch 规则分发方案，也是多个分发 POC 的共享核心。数据模型、
 分组算法、掩码计算、比较器、JSON 编码、测试 fixture 和共同行为测试只在本 package
-维护。`datadriven`、`options` 与 `closure` 通过公开 API 复用这些实现，只保留各自的规则选择逻辑。
+维护。`datadriven`、`options` 与 `closure` 通过公开 API 复用这些实现，只保留各自的规则选择逻辑；
+`purestrategy` 是刻意复制分组骨架的对照方案，用于评估纯策略模式的维护成本。
 
 ## 文件结构
 
@@ -20,7 +21,7 @@
 | [`cluster_dashboard_test.go`](./cluster_dashboard_test.go) | 集群视图、集群排序、未知/无服务保留及输入不可变性测试 |
 | [`example_test.go`](./example_test.go) | 可执行的 switch 分组和 JSON 编码示例 |
 
-## 四种分发方案
+## 五种分发方案
 
 | 方案 | 包 | 规则选择方式 | 代码位置 |
 | --- | --- | --- | --- |
@@ -28,6 +29,7 @@
 | 数据驱动 | `datadriven` | `ruleImpls` 静态映射表选择 key/comparator | [`../datadriven/rules.go`](../datadriven/rules.go) |
 | 函数式选项 | `options` | `NewGrouping(WithKeyFn(...), WithCmpFn(...))` 配置函数对 | [`../options/options.go`](../options/options.go) |
 | 闭包组合 | `closure` | 直接调用规则函数变量，如 `RulePrimaryService(servers)` | [`../closure/closure.go`](../closure/closure.go) |
+| 纯策略模式 | `purestrategy` | `Grouper` 接口 + `map[GroupRule]Grouper`，每个策略独立实现分组流程 | [`../purestrategy/implementations.go`](../purestrategy/implementations.go) |
 
 `baseline` 对外提供 `GroupBy`、`MaskOf`、`PrimaryServiceMask` 和各组间比较函数，目的是让
 候选方案只改变“如何选择规则”，而不是重复实现服务分组和排序算法。`GroupBy` 也集中处理：
@@ -117,5 +119,6 @@ go test ./solutionA
 go test ./...
 ```
 
-共同行为测试只在 `baseline/dashboard_test.go` 维护。候选方案 package 仅测试它们独有的规则
-映射、选项配置或闭包关联，避免复制分组和比较器测试；修改共享算法时只需在 baseline 更新并验证行为。
+共享算法的权威行为测试维护在 `baseline/dashboard_test.go`。`purestrategy` 另以 parity test
+验证独立实现与 baseline 的结果一致；其实现及测试重复是该反例 POC 的评估对象，不是共享核心。
+其他候选方案 package 仅测试它们独有的规则映射、选项配置或闭包关联。
