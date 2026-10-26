@@ -178,12 +178,12 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 		want    []string
 	}{
 		{
-			name: "server state",
+			name: "abnormal server state first",
 			servers: []Server{
 				{Name: "abnormal", State: SrvAbnormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
 				{Name: "normal", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcAbnormal}}},
 			},
-			want: []string{"normal", "abnormal"},
+			want: []string{"abnormal", "normal"},
 		},
 		{
 			name: "unknown server states have a consistent order",
@@ -195,29 +195,39 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 			want: []string{"state-abnormal", "state-a", "state-z"},
 		},
 		{
-			name: "service state",
+			name: "service role",
 			servers: []Server{
-				{Name: "abnormal-service", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcAbnormal}}},
-				{Name: "normal-service", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+				{Name: "follower", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Follower}}},
+				{Name: "leader", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}}},
 			},
-			want: []string{"normal-service", "abnormal-service"},
+			want: []string{"leader", "follower"},
 		},
 		{
-			name: "unknown service states have a consistent order",
+			name: "service roles follow declared precedence",
 			servers: []Server{
-				{Name: "state-z", State: SrvNormal, Services: []Service{{ServiceType: AS, State: State("maintenance-z")}}},
-				{Name: "state-abnormal", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcAbnormal}}},
-				{Name: "state-a", State: SrvNormal, Services: []Service{{ServiceType: AS, State: State("maintenance-a")}}},
+				{Name: "ds-role", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: RoleDS}}},
+				{Name: "ss-role", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: RoleSS}}},
+				{Name: "lss-role", IP: "10.0.0.3", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: LSS}}},
+				{Name: "follower-role", IP: "10.0.0.4", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Follower}}},
+				{Name: "leader-role", IP: "10.0.0.5", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}}},
 			},
-			want: []string{"state-abnormal", "state-a", "state-z"},
+			want: []string{"leader-role", "follower-role", "lss-role", "ss-role", "ds-role"},
 		},
 		{
-			name: "service presence",
+			name: "service type",
 			servers: []Server{
-				{Name: "missing-ts", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-				{Name: "present-ts", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}, {ServiceType: TS, State: SvcAbnormal}}},
+				{Name: "ds", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: DS, Role: Leader}}},
+				{Name: "ts", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: TS, Role: Leader}}},
 			},
-			want: []string{"present-ts", "missing-ts"},
+			want: []string{"ts", "ds"},
+		},
+		{
+			name: "service list length precedes IP after common prefix",
+			servers: []Server{
+				{Name: "has-ts", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}, {ServiceType: TS, Role: Follower}}},
+				{Name: "as-only", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}}},
+			},
+			want: []string{"as-only", "has-ts"},
 		},
 		{
 			name: "ip",
@@ -239,9 +249,9 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			groups := RenderDashboard(tt.servers, RulePrimaryService)
+			groups := GroupBy(tt.servers, func(Server) int { return 1 }, func(int, int) int { return 0 })
 			if len(groups) != 1 {
-				t.Fatalf("groups = %d, want one primary-service group", len(groups))
+				t.Fatalf("groups = %d, want one shared test group", len(groups))
 			}
 			got := make([]string, len(groups[0].Servers))
 			for i, server := range groups[0].Servers {

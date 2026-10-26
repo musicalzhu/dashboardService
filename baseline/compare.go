@@ -6,47 +6,37 @@ import (
 	"strings"
 )
 
+const (
+	roleSS Role = "ss"
+	roleDS Role = "ds"
+)
+
 // prepareServer 克隆 Services 后按服务优先级排序，避免修改调用方切片。
 func prepareServer(server Server) Server {
 	server.Services = slices.Clone(server.Services)
-	slices.SortFunc(server.Services, func(a, b Service) int {
+	slices.SortStableFunc(server.Services, func(a, b Service) int {
 		return serviceTypeRank(a.ServiceType) - serviceTypeRank(b.ServiceType)
 	})
 	return server
 }
 
-// findService 返回服务器上指定类型的第一个服务；不存在时返回 nil。
-func findService(server *Server, serviceType ServiceType) *Service {
-	for i := range server.Services {
-		if server.Services[i].ServiceType == serviceType {
-			return &server.Services[i]
-		}
-	}
-	return nil
-}
-
-// compareServiceStatus 令存在的服务优先于缺失服务，并令 normal 状态优先。
-func compareServiceStatus(a, b *Service) int {
-	switch {
-	case a == nil && b == nil:
-		return 0
-	case a == nil:
-		return 1
-	case b == nil:
-		return -1
-	}
-	return compareState(a.State, b.State)
-}
-
-// compareServers 在同组内按服务器状态、各服务状态、IP、Name 排序。
+// compareServers 按服务器状态、服务类型/角色序列、IP、Name 排序。
 func compareServers(a, b Server) int {
 	if c := compareState(a.State, b.State); c != 0 {
 		return c
 	}
-	for _, serviceType := range allServiceTypes {
-		if c := compareServiceStatus(findService(&a, serviceType), findService(&b, serviceType)); c != 0 {
+	serviceCount := min(len(a.Services), len(b.Services))
+	for i := 0; i < serviceCount; i++ {
+		serviceA, serviceB := a.Services[i], b.Services[i]
+		if c := serviceTypeRank(serviceA.ServiceType) - serviceTypeRank(serviceB.ServiceType); c != 0 {
 			return c
 		}
+		if c := compareRole(serviceA.Role, serviceB.Role); c != 0 {
+			return c
+		}
+	}
+	if len(a.Services) != len(b.Services) {
+		return len(a.Services) - len(b.Services)
 	}
 	if c := strings.Compare(a.IP, b.IP); c != 0 {
 		return c
@@ -60,12 +50,38 @@ func compareState(a, b State) int {
 	}
 	rank := func(state State) int {
 		switch state {
-		case StateNormal:
-			return 0
 		case StateAbnormal:
+			return 0
+		case StateNormal:
 			return 1
 		default:
 			return 2
+		}
+	}
+	if rankA, rankB := rank(a), rank(b); rankA != rankB {
+		return rankA - rankB
+	}
+	return strings.Compare(string(a), string(b))
+}
+
+func compareRole(a, b Role) int {
+	if a == b {
+		return 0
+	}
+	rank := func(role Role) int {
+		switch role {
+		case Leader:
+			return 0
+		case Follower:
+			return 1
+		case LSS:
+			return 2
+		case roleSS:
+			return 3
+		case roleDS:
+			return 4
+		default:
+			return 5
 		}
 	}
 	if rankA, rankB := rank(a), rank(b); rankA != rankB {

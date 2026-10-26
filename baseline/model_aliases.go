@@ -36,4 +36,7 @@ const (
 
 	Leader   = model.Leader
 	Follower = model.Follower
+	LSS      = model.LSS
+	RoleSS   = model.SS
+	RoleDS   = model.DS
 )
