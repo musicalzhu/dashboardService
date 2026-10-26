@@ -3,7 +3,7 @@ package baseline
 import "strings"
 
 // AllServiceCombinations 返回 POC 使用的服务组合 fixture，包含 AS、TS、SS、DS 的全部 15 种非空组合。
-// 三种规则分发方案的演示和测试共同使用该数据，避免重复维护样例。
+// 多种规则分发方案的演示和测试共同使用该数据，避免重复维护样例。
 func AllServiceCombinations() []Server {
 	serviceTypes := []ServiceType{AS, TS, SS, DS}
 	servers := make([]Server, 0, (1<<len(serviceTypes))-1)

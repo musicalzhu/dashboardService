@@ -12,9 +12,12 @@ type Group struct {
 	Servers []Server `json:"servers"`
 }
 
-const noServiceGroupName = "无服务"
-const unknownServiceGroupName = "未知服务"
-const unknownServiceGroupKey = -1
+const (
+	noServiceGroupName      = "无服务"
+	unknownServiceGroupName = "未知服务"
+	unknownServiceGroupKey  = -1
+	noServiceGroupKey       = -2
+)
 
 // KeyFunc 根据服务器计算分组键。
 type KeyFunc func(Server) int
@@ -23,14 +26,14 @@ type KeyFunc func(Server) int
 type CompareFunc func(a, b int) int
 
 // groupBy 是五种规则共享的执行骨架：准备输入、按 key 分桶、组内排序、
-// 按 cmp 排组，并组装返回结果。含未知类型的服务器进入 key=-1 的未知服务组，
-// 该组排在已知组合后、无服务组前；空 Services 的服务器归入 key=0 并固定排最后。
+// 按 cmp 排组，并组装返回结果。含未知类型的服务器进入独立未知服务组，
+// 该组排在已知组合后、无服务组前；空 Services 的服务器进入独立无服务组并固定排最后。
 func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) []Group {
 	byKey := make(map[int][]Server)
 	for _, server := range servers {
 		server = prepareServer(server)
 		if len(server.Services) == 0 {
-			byKey[0] = append(byKey[0], server)
+			byKey[noServiceGroupKey] = append(byKey[noServiceGroupKey], server)
 			continue
 		}
 
@@ -40,8 +43,8 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 		}
 
 		key := keyOf(server)
-		if key == 0 {
-			continue
+		if key < 0 {
+			panic("baseline.GroupBy: key function must return a non-negative key")
 		}
 		byKey[key] = append(byKey[key], server)
 	}
@@ -52,16 +55,16 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 		keys = append(keys, key)
 	}
 	slices.SortFunc(keys, func(a, b int) int {
-		if a == unknownServiceGroupKey && b != unknownServiceGroupKey && b != 0 {
+		if a == unknownServiceGroupKey && b != unknownServiceGroupKey && b != noServiceGroupKey {
 			return 1
 		}
-		if b == unknownServiceGroupKey && a != unknownServiceGroupKey && a != 0 {
+		if b == unknownServiceGroupKey && a != unknownServiceGroupKey && a != noServiceGroupKey {
 			return -1
 		}
-		if a == 0 && b != 0 {
+		if a == noServiceGroupKey && b != noServiceGroupKey {
 			return 1
 		}
-		if b == 0 && a != 0 {
+		if b == noServiceGroupKey && a != noServiceGroupKey {
 			return -1
 		}
 		return cmp(a, b)
@@ -69,10 +72,10 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 
 	groups := make([]Group, len(keys))
 	for i, key := range keys {
-		name := comboName(key)
+		name := groupName(key)
 		if key == unknownServiceGroupKey {
 			name = unknownServiceGroupName
-		} else if key == 0 {
+		} else if key == noServiceGroupKey {
 			name = noServiceGroupName
 		}
 		groups[i] = Group{Key: key, Name: name, Servers: byKey[key]}
@@ -81,6 +84,7 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 }
 
 // GroupBy 使用指定的键函数和组间比较器执行共享分组流程。
+// keyFn 必须返回非负键；0 是有效的普通分组键。负键由 baseline 保留给未知服务和无服务分组。
 // 该函数供不同 POC 复用算法，以便只比较规则选择方式。
 func GroupBy(servers []Server, keyOf KeyFunc, cmp CompareFunc) []Group {
 	if keyOf == nil {

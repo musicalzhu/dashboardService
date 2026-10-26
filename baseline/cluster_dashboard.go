@@ -34,7 +34,7 @@ func RenderClusterDashboard(servers []Server) []ClusterGroup {
 			switch serviceGroup.Key {
 			case unknownServiceGroupKey:
 				serviceType = UnknownServiceType
-			case 0:
+			case noServiceGroupKey:
 				serviceType = NoServiceType
 			}
 			group.ServiceGroups = append(group.ServiceGroups, ServiceGroup{

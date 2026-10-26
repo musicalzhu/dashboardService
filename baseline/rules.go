@@ -23,13 +23,17 @@ const (
 
 // String 返回规则的稳定名称。
 func (r GroupRule) String() string {
-	return [...]string{
+	names := [...]string{
 		"exact-combination",
 		"exact-service-count",
 		"exact-primary",
 		"exact-convention",
 		"primary-service",
-	}[r]
+	}
+	if r < 0 || int(r) >= len(names) {
+		return fmt.Sprintf("GroupRule(%d)", r)
+	}
+	return names[r]
 }
 
 // ParseGroupRule 将配置或请求中的名称解析为规则。

@@ -65,7 +65,7 @@ func compareServers(a, b Server) int {
 
 // cmpByMaskDesc 按组合 mask 降序排列，高优先级组合在前。
 func cmpByMaskDesc(a, b int) int {
-	return b - a
+	return compareIntDesc(a, b)
 }
 
 // CompareByMaskDesc 按 mask 降序比较分组键。
@@ -78,7 +78,7 @@ func cmpByServiceCount(a, b int) int {
 	if c := bits.OnesCount(uint(a)) - bits.OnesCount(uint(b)); c != 0 {
 		return c
 	}
-	return b - a
+	return compareIntDesc(a, b)
 }
 
 // CompareByServiceCount 先按服务数量升序，再按 mask 降序比较分组键。
@@ -94,7 +94,7 @@ func cmpByPrimary(a, b int) int {
 	if c := bits.OnesCount(uint(a)) - bits.OnesCount(uint(b)); c != 0 {
 		return c
 	}
-	return b - a
+	return compareIntDesc(a, b)
 }
 
 // CompareByPrimary 依次按主服务、服务数量和 mask 比较分组键。
@@ -110,12 +110,22 @@ func cmpByConvention(a, b int) int {
 	case rankA >= 0 && rankB >= 0:
 		return rankA - rankB
 	case rankA < 0 && rankB < 0:
-		return b - a
+		return compareIntDesc(a, b)
 	case rankA < 0:
 		return 1
 	default:
 		return -1
 	}
+}
+
+func compareIntDesc(a, b int) int {
+	if a > b {
+		return -1
+	}
+	if a < b {
+		return 1
+	}
+	return 0
 }
 
 // CompareByConvention 按预先定义的业务顺序比较分组键。

@@ -13,6 +13,41 @@ func TestEmptyInputReturnsEmptyGroups(t *testing.T) {
 	}
 }
 
+// TestGroupByRetainsZeroKeyServers 验证零是有效普通键，且不会与无服务组混合或遗漏服务器。
+func TestGroupByRetainsZeroKeyServers(t *testing.T) {
+	servers := []Server{
+		{Name: "zero-key-a", Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+		{Name: "zero-key-b", Services: []Service{{ServiceType: TS, State: SvcNormal}}},
+		{Name: "no-service"},
+	}
+
+	groups := GroupBy(servers, func(Server) int { return 0 }, CompareByMaskDesc)
+	if len(groups) != 2 {
+		t.Fatalf("group count = %d, want zero-key and no-service groups", len(groups))
+	}
+	if groups[0].Key != 0 || groups[0].Name != "键 0" || len(groups[0].Servers) != 2 {
+		t.Errorf("zero-key group = %#v, want two keyed servers", groups[0])
+	}
+	if groups[1].Key != noServiceGroupKey || groups[1].Name != noServiceGroupName ||
+		len(groups[1].Servers) != 1 || groups[1].Servers[0].Name != "no-service" {
+		t.Errorf("no-service group = %#v", groups[1])
+	}
+}
+
+// TestGroupByRejectsReservedNegativeKeys 验证自定义函数不能返回内部特殊组键。
+func TestGroupByRejectsReservedNegativeKeys(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("negative key should panic")
+		}
+	}()
+	GroupBy(
+		[]Server{{Name: "node", Services: []Service{{ServiceType: AS}}}},
+		func(Server) int { return -1 },
+		CompareByMaskDesc,
+	)
+}
+
 // TestAllRulesPreserveTheExpectedGroupingSemantics 为所有分发方案验证共享规则行为。
 func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
 	servers := AllServiceCombinations()
@@ -111,7 +146,7 @@ func TestUnknownServicesIncluded(t *testing.T) {
 					if i != len(groups)-2 {
 						t.Errorf("unknown group position = %d, want penultimate", i)
 					}
-				case 0:
+				case noServiceGroupKey:
 					emptyGroup = group
 					if i != len(groups)-1 {
 						t.Errorf("empty group position = %d, want last", i)
@@ -203,7 +238,7 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 
 // TestMarshalGroups 验证对外公开的 JSON 集成边界。
 func TestMarshalGroups(t *testing.T) {
-	got, err := MarshalGroups([]Group{{Key: 0, Name: noServiceGroupName, Servers: []Server{}}})
+	got, err := MarshalGroups([]Group{{Key: noServiceGroupKey, Name: noServiceGroupName, Servers: []Server{}}})
 	if err != nil {
 		t.Fatalf("MarshalGroups() error: %v", err)
 	}
@@ -221,6 +256,12 @@ func TestInvalidRulePanics(t *testing.T) {
 		}
 	}()
 	RenderDashboard(nil, GroupRule(999))
+}
+
+func TestInvalidRuleStringDoesNotPanic(t *testing.T) {
+	if got := GroupRule(999).String(); got != "GroupRule(999)" {
+		t.Fatalf("GroupRule(999).String() = %q, want %q", got, "GroupRule(999)")
+	}
 }
 
 // TestParseGroupRule 验证规则名称、默认值和未知名称错误。

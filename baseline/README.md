@@ -32,8 +32,8 @@
 `baseline` 对外提供 `GroupBy`、`MaskOf`、`PrimaryServiceMask` 和各组间比较函数，目的是让
 候选方案只改变“如何选择规则”，而不是重复实现服务分组和排序算法。`GroupBy` 也集中处理：
 
-- `Services` 为空：进入 `Key=0` 的“无服务”组，固定最后。
-- 任意服务类型未知：整台服务器进入 `Key=-1` 的“未知服务”组；已知与未知混合时也按未知处理，
+- `Services` 为空：进入专用的“无服务”组，固定最后。
+- 任意服务类型未知：整台服务器进入专用的“未知服务”组；已知与未知混合时也按未知处理，
   固定在已知组之后、无服务组之前。
 - 组内服务器排序：服务器状态、各服务存在性/状态、IP、Name。
 - 服务器内 Services 排序：先克隆，再按 AS→TS→SS→DS 整理，不修改调用方输入。
@@ -98,6 +98,10 @@ Options 和 Closure POC 的规则 API 与语义保持不变。
 | `CompareByConvention(a, b)` | 按业务约定顺序 |
 | `MarshalGroups(groups)` | 将结果编码成缩进 JSON |
 | `AllServiceCombinations()` | 返回供 POC 演示与测试使用的 15 种组合 fixture |
+
+`GroupBy` 的普通分组键允许为 0；负键保留给内部未知服务组和无服务组，回调返回负键会明确 panic，
+不会与特殊组混淆。键为 0 的普通组显示名为“键 0”。无效的 `GroupRule.String()` 会返回
+`GroupRule(n)`，不会因枚举越界而 panic。
 
 ## 运行与测试
 
