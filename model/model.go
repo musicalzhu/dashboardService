@@ -35,6 +35,9 @@ const (
 
 	// NoServiceType 是 Dashboard 分组使用的“无服务”类别标识，不代表实际微服务类型。
 	NoServiceType ServiceType = "no-service"
+
+	// UnknownServiceType 是 Dashboard 分组使用的“未知服务”类别标识，不代表实际微服务类型。
+	UnknownServiceType ServiceType = "unknown-service"
 )
 
 const (
@@ -140,4 +143,7 @@ type ClusterFlatGroup struct {
 
 	// NoService 是没有运行任何服务的服务器列表；为空时 JSON 中省略该字段。
 	NoService []Server `json:"no_service,omitempty"`
+
+	// UnknownServices 是包含未识别服务类型的服务器列表；为空时 JSON 中省略该字段。
+	UnknownServices []Server `json:"unknown_services,omitempty"`
 }

@@ -10,6 +10,9 @@ type Role = model.Role
 type Service = model.Service
 type Cluster = model.Cluster
 type Server = model.Server
+type ClusterGroup = model.ClusterGroup
+type ServiceGroup = model.ServiceGroup
+type ClusterFlatGroup = model.ClusterFlatGroup
 type ServiceStatus = model.State
 type ServerStatus = model.State
 type PaxosRole = model.Role
@@ -22,6 +25,9 @@ const (
 	TS = model.TSType
 	SS = model.SSType
 	DS = model.DSType
+
+	NoServiceType      = model.NoServiceType
+	UnknownServiceType = model.UnknownServiceType
 
 	SvcNormal   = model.StateNormal
 	SvcAbnormal = model.StateAbnormal

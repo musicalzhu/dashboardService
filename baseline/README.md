@@ -9,6 +9,7 @@
 | 文件 | 职责 |
 | --- | --- |
 | [`dashboard.go`](./dashboard.go) | `Group`、共享 `GroupBy` 骨架及 switch 基线入口 `RenderDashboard` |
+| [`cluster_dashboard.go`](./cluster_dashboard.go) | 按集群聚合的嵌套视图和平铺视图 API |
 | [`rules.go`](./rules.go) | 规则常量、名称解析和 `String` |
 | [`mask.go`](./mask.go) | 服务优先级、mask、组合名称、主服务投影 |
 | [`compare.go`](./compare.go) | Services 预处理、组内服务器排序、组间比较器 |
@@ -16,6 +17,7 @@
 | [`json.go`](./json.go) | 对应用公开的 `MarshalGroups` 集成边界 |
 | [`fixtures.go`](./fixtures.go) | 演示和各 POC 共用的 15 种服务组合 fixture |
 | [`dashboard_test.go`](./dashboard_test.go) | 共享规则行为、边界和排序的唯一权威测试 |
+| [`cluster_dashboard_test.go`](./cluster_dashboard_test.go) | 集群视图、集群排序、未知/无服务保留及输入不可变性测试 |
 | [`example_test.go`](./example_test.go) | 可执行的 switch 分组和 JSON 编码示例 |
 
 ## 四种分发方案
@@ -35,6 +37,44 @@
   固定在已知组之后、无服务组之前。
 - 组内服务器排序：服务器状态、各服务存在性/状态、IP、Name。
 - 服务器内 Services 排序：先克隆，再按 AS→TS→SS→DS 整理，不修改调用方输入。
+
+## 集群 Dashboard 输出
+
+当前 `RenderDashboard` 按完整服务组合或主服务规则返回全局 `[]Group`。solutionA 还提出了
+两种输出需求：先按 `ClusterID` 聚合集群，再按主服务类型分类；以及把分类写入固定字段的平铺
+JSON 结构。baseline 通过独立 API 支持这两种形状，不改变原有规则入口：
+
+| API | 输出 | 用途 |
+| --- | --- | --- |
+| `RenderClusterDashboard(servers)` | `[]ClusterGroup`，每个集群含 `ServiceGroups` | 可扩展的嵌套服务分组 |
+| `RenderClusterFlatDashboard(servers)` | `[]ClusterFlatGroup`，每个服务类型对应固定字段 | 适配固定字段的 Dashboard/JSON 消费方 |
+
+这两个 API 均按 `ClusterID` 聚合，并采用 AS→TS→SS→DS 的主服务优先级。组内共享 baseline 的
+服务器排序逻辑。无 Services 的服务器归入 `NoServiceType`；含未知服务（包括已知与未知混合）
+的服务器归入 `UnknownServiceType`。平铺结构以 `unknown_services` 输出未知服务服务器，避免
+solutionA 原平铺实现中未知类型服务器被遗漏的问题。集群按 `primary`→`secondary`→`arbiter`
+排序，未识别的集群角色排最后，再按 `ClusterID` 升序；相同 ID 的元数据使用输入中首次出现的值。
+
+```go
+nested := baseline.RenderClusterDashboard(servers)
+flat := baseline.RenderClusterFlatDashboard(servers)
+```
+
+此功能扩展的是结果聚合/展示形状，不是新增一种规则分发技术；原有 baseline、Data-driven、
+Options 和 Closure POC 的规则 API 与语义保持不变。
+
+### solutionA 差异取舍
+
+| solutionA 特征 | baseline 当前状态 | 处理 |
+| --- | --- | --- |
+| 按 ClusterID 聚合集群 | 原规则入口是全局服务组 | 采纳，新增两个集群视图 API |
+| 服务器按最高优先级服务归组 | 原有规则支持完整组合和主服务 bit | 采纳为集群视图分类规则 |
+| 嵌套与平铺两种输出模型 | 原有 API 仅返回 `[]Group` | 采纳，复用 model 中已有输出类型 |
+| 保留无服务服务器 | 原规则已保留 | 保持；集群视图映射到 `NoServiceType` |
+| 未知服务在平铺输出 | solutionA 的 flat default 分支可能跳过非空未知服务 | 改进采纳，显式输出 `unknown_services` |
+| 异常状态排在正常状态前 | 与 baseline 既有排序契约相反 | 不采纳，保留 baseline 的正常优先行为 |
+| 按服务 Role 排序 | baseline 的组内顺序按状态、服务状态/存在性、IP、Name | 暂不采纳；这是不同的领域排序策略，需业务确认后再改变契约 |
+| 自定义 `Sorter` 注入 | 现有 POC 比较共享默认规则分发 | 不采纳到基线；避免为单个输出方案扩大排序接口 |
 
 ## 排序与分组边界
 
@@ -64,6 +104,7 @@
 ```powershell
 go run ./cmd/baseline-demo
 go test ./baseline
+go test ./solutionA
 go test ./...
 ```
 
