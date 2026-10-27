@@ -49,9 +49,14 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 		keys = append(keys, key)
 	}
 
-	// 专用组不受业务 comparator 控制，以免特殊负键混入普通规则排序。
-	// 普通组之间的顺序完全由 cmp 决定。
+	// slices.SortFunc 要求比较函数构成严格弱序：返回负数表示 a 在前，
+	// 正数表示 b 在前，0 表示两者等价。普通分组键的排序完全委托给 cmp。
+	// 未知服务组和无服务组则由此处固定优先级，不参与普通组的业务排序，
+	// 避免特殊负键被自定义 comparator 当作普通键处理。
 	slices.SortFunc(keys, func(a, b int) int {
+		if a == b {
+			return 0
+		}
 		if a == unknownServiceGroupKey && b != unknownServiceGroupKey && b != noServiceGroupKey {
 			return 1
 		}
