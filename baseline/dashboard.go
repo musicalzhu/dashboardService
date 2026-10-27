@@ -1,6 +1,7 @@
 package baseline
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 )
@@ -17,7 +18,7 @@ type CompareFunc func(a, b int) int
 // 空 Services 和含未知服务类型的服务器分别进入专用分组，不调用 keyOf：
 // 无服务组固定排最后，未知服务组排在普通分组之后、无服务组之前。
 // 普通分组键必须非负；负键由 baseline 保留给这两个专用分组。
-func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) []Group {
+func groupBy(servers []Server, keyOf func(Server) int, compareKeys func(a, b int) int) []Group {
 	byKey := make(map[int][]Server)
 	for _, server := range servers {
 		// 复制并整理 Services，确保后续排序使用稳定顺序且不修改调用方输入。
@@ -49,27 +50,16 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 		keys = append(keys, key)
 	}
 
-	// slices.SortFunc 要求比较函数构成严格弱序：返回负数表示 a 在前，
-	// 正数表示 b 在前，0 表示两者等价。普通分组键的排序完全委托给 cmp。
-	// 未知服务组和无服务组则由此处固定优先级，不参与普通组的业务排序，
-	// 避免特殊负键被自定义 comparator 当作普通键处理。
+	// 特殊组按固定优先级排序；普通组之间的顺序完全委托给业务 comparator。
+	// cmp.Compare 负责比较特殊组优先级，避免这些保留负键被当作普通键传给业务 comparator。
 	slices.SortFunc(keys, func(a, b int) int {
 		if a == b {
 			return 0
 		}
-		if a == unknownServiceGroupKey && b != unknownServiceGroupKey && b != noServiceGroupKey {
-			return 1
+		if order := cmp.Compare(groupKeySortPriority(a), groupKeySortPriority(b)); order != 0 {
+			return order
 		}
-		if b == unknownServiceGroupKey && a != unknownServiceGroupKey && a != noServiceGroupKey {
-			return -1
-		}
-		if a == noServiceGroupKey && b != noServiceGroupKey {
-			return 1
-		}
-		if b == noServiceGroupKey && a != noServiceGroupKey {
-			return -1
-		}
-		return cmp(a, b)
+		return compareKeys(a, b)
 	})
 
 	// 按已经确定的键顺序构造结果；make 保证空输入也返回非 nil 的空切片。
@@ -85,6 +75,17 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 		groups[i] = Group{Key: key, Name: name, Servers: byKey[key]}
 	}
 	return groups
+}
+
+func groupKeySortPriority(key int) int {
+	switch key {
+	case unknownServiceGroupKey:
+		return 1
+	case noServiceGroupKey:
+		return 2
+	default:
+		return 0
+	}
 }
 
 // GroupBy 按 ClusterID 聚合服务器，并在每个集群内使用指定键函数和比较器分组。
