@@ -51,16 +51,18 @@ func ExampleRenderDashboard() {
 		{Name: "node-empty"},
 	}
 
-	groups := RenderDashboard(servers, RuleExactCombination)
-	for _, group := range groups {
-		fmt.Printf("%s: ", group.Name)
-		for i, server := range group.Servers {
-			if i > 0 {
-				fmt.Print(", ")
+	clusters := RenderDashboard(servers, RuleExactCombination)
+	for _, cluster := range clusters {
+		for _, group := range cluster.Groups {
+			fmt.Printf("%s: ", group.Name)
+			for i, server := range group.Servers {
+				if i > 0 {
+					fmt.Print(", ")
+				}
+				fmt.Print(server.Name)
 			}
-			fmt.Print(server.Name)
+			fmt.Println()
 		}
-		fmt.Println()
 	}
 
 	// Output:

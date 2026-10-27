@@ -26,11 +26,13 @@ func main() {
 		}},
 		{Name: "no-service-node"},
 	}
-	for _, group := range grouping.Apply(servers) {
-		fmt.Printf("%-12s (%d servers):", group.Name, len(group.Servers))
-		for _, server := range group.Servers {
-			fmt.Printf(" %s", server.Name)
+	for _, cluster := range grouping.Apply(servers) {
+		for _, group := range cluster.Groups {
+			fmt.Printf("%-12s (%d servers):", group.Name, len(group.Servers))
+			for _, server := range group.Servers {
+				fmt.Printf(" %s", server.Name)
+			}
+			fmt.Println()
 		}
-		fmt.Println()
 	}
 }

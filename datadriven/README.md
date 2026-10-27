@@ -8,7 +8,7 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| [`dashboard.go`](./dashboard.go) | 查找规则映射，并委托 `baseline.GroupBy` |
+| [`dashboard.go`](./dashboard.go) | 查找规则映射，并委托 `baseline.GroupBy` 返回集群分组 |
 | [`rules.go`](./rules.go) | 规则类型/常量别名及 `ruleImpls` 映射表 |
 | [`model_aliases.go`](./model_aliases.go) | 共享 baseline 领域类型别名 |
 | [`json.go`](./json.go) | 对外 JSON 集成边界，委托 `baseline.MarshalGroups` |
@@ -28,9 +28,9 @@ flowchart TD
     Rule --> Table["ruleImpls<br/>规则到函数的映射"]
     Table --> Dispatch["RenderDashboard"]
     Dispatch --> Core["baseline.GroupBy"]
-    Core --> Groups["分组与排序结果"]
-    Groups --> JSON["MarshalGroups"]
-    JSON --> Encoder["baseline.MarshalGroups"]
+    Core --> Groups["[]ClusterGroup"]
+    Groups --> JSON["MarshalDashboard"]
+    JSON --> Encoder["baseline.MarshalDashboard"]
 ```
 
 ## 规则表
@@ -52,14 +52,19 @@ flowchart TD
 | --- | --- |
 | 服务分组 | 规则表提供 key 函数；共享 `baseline.GroupBy` 按 key 聚合 |
 | 组间排序 | 规则表提供 comparator；特殊未知服务组在已知组之后、无服务组之前，无服务组固定最后 |
-| 组内服务器排序 | baseline 按服务器状态、服务状态/存在性、IP、Name 排序 |
+| 组内服务器排序 | baseline 按服务器状态、服务类型/角色、服务列表长度、IP、Name 排序 |
 | 服务器内服务排序 | baseline 先克隆 Services，再按 AS→TS→SS→DS 排序，不修改输入 |
 
 ## 调用示例
 
 ```go
-groups := datadriven.RenderDashboard(servers, datadriven.RuleExactConvention)
-jsonBytes, err := datadriven.MarshalGroups(groups)
+import (
+    "dashboardService/baseline"
+    "dashboardService/datadriven"
+)
+
+clusters := datadriven.RenderDashboard(servers, datadriven.RuleExactConvention)
+jsonBytes, err := baseline.MarshalDashboard(servers, datadriven.RuleExactConvention, baseline.JSONNested)
 if err != nil {
     return err
 }

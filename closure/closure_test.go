@@ -50,8 +50,10 @@ func ExampleRulePrimaryService() {
 		{Name: "node-ts", Services: []closure.Service{{ServiceType: closure.TS, State: closure.SvcNormal}}},
 	}
 
-	for _, group := range closure.RulePrimaryService(servers) {
-		fmt.Println(group.Name)
+	for _, cluster := range closure.RulePrimaryService(servers) {
+		for _, group := range cluster.Groups {
+			fmt.Println(group.Name)
+		}
 	}
 
 	// Output:

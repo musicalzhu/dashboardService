@@ -17,6 +17,9 @@ type Service = baseline.Service
 // Cluster 是 baseline.Cluster 的别名，复用共享集群元数据结构。
 type Cluster = baseline.Cluster
 
+// ClusterGroup 是 baseline.ClusterGroup 的别名，复用前端分组结构。
+type ClusterGroup = baseline.ClusterGroup
+
 // Server 是 baseline.Server 的别名，复用共享服务器及其服务列表结构。
 type Server = baseline.Server
 

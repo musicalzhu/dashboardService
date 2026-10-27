@@ -5,6 +5,9 @@ import "dashboardService/baseline"
 // Group 是 baseline 共享的分组结果类型。
 type Group = baseline.Group
 
+// ClusterGroup 是 baseline 共享的前端集群分组类型。
+type ClusterGroup = baseline.ClusterGroup
+
 // GroupRule 是 baseline 共享的规则标识类型。
 type GroupRule = baseline.GroupRule
 

@@ -24,7 +24,7 @@ flowchart TD
     Opts --> Cfg["NewGrouping<br/>验证并固定配置"]
     Cfg --> Apply["Grouping.Apply"]
     Apply --> Core["baseline.GroupBy"]
-    Core --> Output["[]baseline.Group"]
+    Core --> Output["[]baseline.ClusterGroup"]
 ```
 
 默认配置是完整组合 mask 分组、mask 降序。选项在构造时应用；创建完成后，`Grouping` 的配置字段
@@ -41,7 +41,7 @@ if err != nil {
     return err
 }
 
-groups := grouping.Apply(servers)
+clusters := grouping.Apply(servers)
 ```
 
 调用方必须了解并选出具体函数。这与 `baseline.RenderDashboard(servers, RulePrimaryService)` 的规则名称不同：

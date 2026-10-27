@@ -1,7 +1,7 @@
 # Pure Strategy 分组方案
 
 本 package 是规则分发 POC 的“纯策略模式”对照组。每个分组规则都实现 `Grouper` 接口，
-并在自己的 `Group` 方法中独立执行输入准备、分桶、组排序和结果组装。`Groupers` 注册表负责
+并在自己的 `Group` 方法中独立执行输入准备、分桶、组排序和组结果构造，再按集群聚合成前端结构。`Groupers` 注册表负责
 按 `GroupRule` 选择具体策略。为免无关底层细节淹没对比，服务优先级、组名及组内比较的基础
 函数在本 package 内共享；各策略不调用 baseline 的分组、mask 或排序实现。
 
@@ -14,7 +14,7 @@ flowchart TD
     Registry --> Impl["具体规则策略"]
     Impl --> Full["该策略独立的分组与组排序流程"]
     Full --> Shared["本 package 的底层排序/命名函数"]
-    Shared --> Result["[]Group"]
+    Shared --> Result["[]ClusterGroup"]
 ```
 
 ## 文件结构
@@ -37,13 +37,13 @@ flowchart TD
 | `RulePrimaryService` | `primaryService` | 最高优先级服务 | mask 降序 |
 
 ```go
-groups := purestrategy.RenderDashboard(servers, baseline.RulePrimaryService)
+clusters := purestrategy.RenderDashboard(servers, baseline.RulePrimaryService)
 ```
 
 也可以直接调用某个注册策略：
 
 ```go
-groups := purestrategy.Groupers[baseline.RulePrimaryService].Group(servers)
+clusters := purestrategy.Groupers[baseline.RulePrimaryService].Group(servers)
 ```
 
 ## 与共享骨架方案的比较

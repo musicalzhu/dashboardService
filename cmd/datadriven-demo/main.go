@@ -33,12 +33,14 @@ func main() {
 
 	for _, rule := range rules {
 		fmt.Printf("\n=== %s ===\n", rule)
-		for _, group := range datadriven.RenderDashboard(servers, rule) {
-			fmt.Printf("%-20s (%d servers):", group.Name, len(group.Servers))
-			for _, server := range group.Servers {
-				fmt.Printf(" %s", server.Name)
+		for _, cluster := range datadriven.RenderDashboard(servers, rule) {
+			for _, group := range cluster.Groups {
+				fmt.Printf("%-20s (%d servers):", group.Name, len(group.Servers))
+				for _, server := range group.Servers {
+					fmt.Printf(" %s", server.Name)
+				}
+				fmt.Println()
 			}
-			fmt.Println()
 		}
 	}
 }

@@ -68,18 +68,18 @@ func TestFunctionalOptionsAreUsableOutsidePackage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewGrouping() error: %v", err)
 	}
-	groups := grouping.Apply(comparisonServers())
-	if len(groups) != 4 {
-		t.Fatalf("Apply() returned %d groups, want 4", len(groups))
+	clusters := grouping.Apply(comparisonServers())
+	if len(clusters) != 2 || len(clusters[0].Groups) != 2 || len(clusters[1].Groups) != 2 {
+		t.Fatalf("Apply() returned %#v, want two clusters with two groups each", clusters)
 	}
 }
 
 func comparisonServers() []baseline.Server {
 	return []baseline.Server{
-		{Name: "as", Services: []baseline.Service{{ServiceType: baseline.ASType}}},
-		{Name: "ts", Services: []baseline.Service{{ServiceType: baseline.TSType}}},
-		{Name: "ss", Services: []baseline.Service{{ServiceType: baseline.SSType}}},
-		{Name: "ds", Services: []baseline.Service{{ServiceType: baseline.DSType}}},
+		{Name: "as", Cluster: baseline.Cluster{ClusterID: 1, ClusterRole: baseline.PrimaryClusterRole}, Services: []baseline.Service{{ServiceType: baseline.ASType}}},
+		{Name: "ts", Cluster: baseline.Cluster{ClusterID: 1, ClusterRole: baseline.PrimaryClusterRole}, Services: []baseline.Service{{ServiceType: baseline.TSType}}},
+		{Name: "ss", Cluster: baseline.Cluster{ClusterID: 2, ClusterRole: baseline.SecondaryClusterRole}, Services: []baseline.Service{{ServiceType: baseline.SSType}}},
+		{Name: "ds", Cluster: baseline.Cluster{ClusterID: 2, ClusterRole: baseline.SecondaryClusterRole}, Services: []baseline.Service{{ServiceType: baseline.DSType}}},
 	}
 }
 
@@ -98,8 +98,10 @@ func ExampleNewGrouping() {
 		{Name: "node-as", Services: []options.Service{{ServiceType: options.AS, State: options.SvcNormal}}},
 		{Name: "node-ts", Services: []options.Service{{ServiceType: options.TS, State: options.SvcNormal}}},
 	}
-	for _, group := range grouping.Apply(servers) {
-		fmt.Println(group.Name)
+	for _, cluster := range grouping.Apply(servers) {
+		for _, group := range cluster.Groups {
+			fmt.Println(group.Name)
+		}
 	}
 
 	// Output:

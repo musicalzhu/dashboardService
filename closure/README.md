@@ -20,7 +20,7 @@ flowchart TD
     Caller["调用方"] --> Rule["RulePrimaryService(servers)"]
     Rule --> Closure["Grouper 闭包<br/>固定 keyFn + comparator"]
     Closure --> Core["baseline.GroupBy"]
-    Core --> Result["[]Group"]
+    Core --> Result["[]ClusterGroup"]
 ```
 
 `makeGrouper` 捕获 key 函数与组间比较器，返回一个接受服务器列表并委托
@@ -30,14 +30,14 @@ flowchart TD
 ## 调用示例
 
 ```go
-groups := closure.RulePrimaryService(servers)
+clusters := closure.RulePrimaryService(servers)
 ```
 
 也可以把规则函数作为值传递：
 
 ```go
 var group closure.Grouper = closure.RuleExactConvention
-groups := group(servers)
+clusters := group(servers)
 ```
 
 ## 与其他方案比较

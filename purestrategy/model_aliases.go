@@ -7,6 +7,9 @@ type State = baseline.State
 type ServiceType = baseline.ServiceType
 type Role = baseline.ServiceRole
 type Service = baseline.Service
+type Cluster = baseline.Cluster
+type ClusterGroup = baseline.ClusterGroup
+type ClusterRole = baseline.ClusterRole
 
 const (
 	StateNormal   = baseline.StateNormal

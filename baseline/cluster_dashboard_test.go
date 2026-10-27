@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestRenderClusterDashboardGroupsByClusterAndPrimaryService(t *testing.T) {
+func TestRenderDashboardGroupsByClusterAndPrimaryService(t *testing.T) {
 	servers := []Server{
 		{
 			Name:     "secondary-ts",
@@ -30,7 +30,7 @@ func TestRenderClusterDashboardGroupsByClusterAndPrimaryService(t *testing.T) {
 		},
 	}
 
-	got := RenderClusterDashboard(servers)
+	got := RenderDashboard(servers, RulePrimaryService)
 	if len(got) != 3 {
 		t.Fatalf("cluster count = %d, want 3", len(got))
 	}
@@ -53,7 +53,7 @@ func TestRenderClusterDashboardGroupsByClusterAndPrimaryService(t *testing.T) {
 	}
 }
 
-func TestRenderClusterDashboardRetainsEmptyAndUnknownServers(t *testing.T) {
+func TestRenderDashboardRetainsEmptyAndUnknownServers(t *testing.T) {
 	servers := []Server{
 		{
 			Name:     "mixed",
@@ -64,7 +64,7 @@ func TestRenderClusterDashboardRetainsEmptyAndUnknownServers(t *testing.T) {
 		{Name: "empty-services", Cluster: Cluster{ClusterID: 7, ClusterRole: PrimaryClusterRole}, Services: []Service{}},
 	}
 
-	nested := RenderClusterDashboard(servers)
+	nested := RenderDashboard(servers, RulePrimaryService)
 	if len(nested) != 1 || len(nested[0].Groups) != 2 {
 		t.Fatalf("nested result = %#v, want one cluster with unknown and no-service groups", nested)
 	}
@@ -78,9 +78,9 @@ func TestRenderClusterDashboardRetainsEmptyAndUnknownServers(t *testing.T) {
 		t.Errorf("no-service group = %#v, want both empty service servers", nested[0].Groups[1])
 	}
 
-	encoded, err := MarshalClusterDashboard(servers, RulePrimaryService, JSONFlat)
+	encoded, err := MarshalDashboard(servers, RulePrimaryService, JSONFlat)
 	if err != nil {
-		t.Fatalf("MarshalClusterDashboard() error: %v", err)
+		t.Fatalf("MarshalDashboard() error: %v", err)
 	}
 	var flat []struct {
 		ClusterID int      `json:"cluster_id"`
@@ -102,7 +102,7 @@ func TestRenderClusterDashboardRetainsEmptyAndUnknownServers(t *testing.T) {
 	}
 }
 
-func TestRenderClusterDashboardByRuleAppliesAllRules(t *testing.T) {
+func TestRenderDashboardAppliesAllRules(t *testing.T) {
 	servers := []Server{
 		{Name: "as-ts", Cluster: Cluster{ClusterID: 1}, Services: []Service{{ServiceType: ASType}, {ServiceType: TSType}}},
 		{Name: "as", Cluster: Cluster{ClusterID: 1}, Services: []Service{{ServiceType: ASType}}},
@@ -117,21 +117,16 @@ func TestRenderClusterDashboardByRuleAppliesAllRules(t *testing.T) {
 	}
 	for _, rule := range rules {
 		t.Run(rule.String(), func(t *testing.T) {
-			got := RenderClusterDashboardByRule(servers, rule)
+			got := RenderDashboard(servers, rule)
 			want := RenderDashboard(servers, rule)
-			if len(got) != 1 || len(got[0].Groups) != len(want) {
-				t.Fatalf("cluster result = %#v, want one cluster with %d groups", got, len(want))
-			}
-			for i := range want {
-				if got[0].Groups[i].Name != want[i].Name {
-					t.Errorf("group[%d] = %q, want %q", i, got[0].Groups[i].Name, want[i].Name)
-				}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("cluster result = %#v, want %#v", got, want)
 			}
 		})
 	}
 }
 
-func TestRenderClusterDashboardDoesNotMutateServiceOrder(t *testing.T) {
+func TestRenderDashboardDoesNotMutateServiceOrder(t *testing.T) {
 	servers := []Server{{
 		Name:    "node",
 		Cluster: Cluster{ClusterID: 1, ClusterRole: PrimaryClusterRole},
@@ -142,7 +137,7 @@ func TestRenderClusterDashboardDoesNotMutateServiceOrder(t *testing.T) {
 	}}
 	original := append([]Service(nil), servers[0].Services...)
 
-	result := RenderClusterDashboard(servers)
+	result := RenderDashboard(servers, RulePrimaryService)
 	if !reflect.DeepEqual(servers[0].Services, original) {
 		t.Fatalf("input Services mutated: got %#v, want %#v", servers[0].Services, original)
 	}
@@ -151,7 +146,7 @@ func TestRenderClusterDashboardDoesNotMutateServiceOrder(t *testing.T) {
 	}
 }
 
-func TestRenderClusterDashboardSortsClusterRolesAndUnknownLast(t *testing.T) {
+func TestRenderDashboardSortsClusterRolesAndUnknownLast(t *testing.T) {
 	servers := []Server{
 		{Name: "unknown", Cluster: Cluster{ClusterID: 1, ClusterRole: ClusterRole("other")}, Services: []Service{{ServiceType: ASType}}},
 		{Name: "arbiter", Cluster: Cluster{ClusterID: 4, ClusterRole: ArbiterClusterRole}, Services: []Service{{ServiceType: ASType}}},
@@ -159,7 +154,7 @@ func TestRenderClusterDashboardSortsClusterRolesAndUnknownLast(t *testing.T) {
 		{Name: "primary", Cluster: Cluster{ClusterID: 8, ClusterRole: PrimaryClusterRole}, Services: []Service{{ServiceType: ASType}}},
 	}
 
-	groups := RenderClusterDashboard(servers)
+	groups := RenderDashboard(servers, RulePrimaryService)
 	got := make([]ClusterRole, len(groups))
 	for i, group := range groups {
 		got[i] = group.ClusterRole

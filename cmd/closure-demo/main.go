@@ -17,11 +17,13 @@ func main() {
 		{Name: "no-service-node"},
 	}
 
-	for _, group := range closure.RulePrimaryService(servers) {
-		fmt.Printf("%-20s (%d servers):", group.Name, len(group.Servers))
-		for _, server := range group.Servers {
-			fmt.Printf(" %s", server.Name)
+	for _, cluster := range closure.RulePrimaryService(servers) {
+		for _, group := range cluster.Groups {
+			fmt.Printf("%-20s (%d servers):", group.Name, len(group.Servers))
+			for _, server := range group.Servers {
+				fmt.Printf(" %s", server.Name)
+			}
+			fmt.Println()
 		}
-		fmt.Println()
 	}
 }

@@ -30,7 +30,7 @@ func allServiceCombinations() []Server {
 }
 
 // TestEmptyInputReturnsEmptyGroups 验证空输入返回非 nil 空切片。
-func TestEmptyInputReturnsEmptyGroups(t *testing.T) {
+func TestEmptyInputReturnsEmptyClusterGroups(t *testing.T) {
 	groups := RenderDashboard(nil, RuleExactCombination)
 	if groups == nil || len(groups) != 0 {
 		t.Fatalf("RenderDashboard(nil, ...) = %#v, want non-nil empty slice", groups)
@@ -45,10 +45,11 @@ func TestGroupByRetainsZeroKeyServers(t *testing.T) {
 		{Name: "no-service"},
 	}
 
-	groups := GroupServersBy(servers, func(Server) int { return 0 }, CompareByMaskDesc)
-	if len(groups) != 2 {
-		t.Fatalf("group count = %d, want zero-key and no-service groups", len(groups))
+	clusters := GroupBy(servers, func(Server) int { return 0 }, CompareByMaskDesc)
+	if len(clusters) != 1 || len(clusters[0].Groups) != 2 {
+		t.Fatalf("result = %#v, want one cluster with zero-key and no-service groups", clusters)
 	}
+	groups := clusters[0].Groups
 	if groups[0].Key != 0 || groups[0].Name != "键 0" || len(groups[0].Servers) != 2 {
 		t.Errorf("zero-key group = %#v, want two keyed servers", groups[0])
 	}
@@ -114,7 +115,7 @@ func TestGroupByRejectsReservedNegativeKeys(t *testing.T) {
 			t.Fatal("negative key should panic")
 		}
 	}()
-	GroupServersBy(
+	GroupBy(
 		[]Server{{Name: "node", Services: []Service{{ServiceType: ASType}}}},
 		func(Server) int { return -1 },
 		CompareByMaskDesc,
@@ -140,7 +141,7 @@ func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
 	}
 	for rule, want := range expectedNames {
 		t.Run(rule.String(), func(t *testing.T) {
-			groups := RenderDashboard(servers, rule)
+			groups := RenderDashboard(servers, rule)[0].Groups
 			if rule == RulePrimaryService {
 				counts := []int{8, 4, 2, 1}
 				if len(groups) != len(counts) {
@@ -164,7 +165,7 @@ func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
 
 	for _, rule := range []GroupRule{RuleExactServiceCount, RuleExactPrimary} {
 		t.Run(rule.String(), func(t *testing.T) {
-			groups := RenderDashboard(servers, rule)
+			groups := RenderDashboard(servers, rule)[0].Groups
 			if len(groups) != 15 {
 				t.Fatalf("group count = %d, want 15", len(groups))
 			}
@@ -204,7 +205,7 @@ func TestUnknownServicesIncluded(t *testing.T) {
 		RulePrimaryService,
 	} {
 		t.Run(rule.String(), func(t *testing.T) {
-			groups := RenderDashboard(servers, rule)
+			groups := RenderDashboard(servers, rule)[0].Groups
 			total := 0
 			var unknownGroup, emptyGroup *Group
 			for i := range groups {
@@ -322,12 +323,12 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			groups := GroupServersBy(tt.servers, func(Server) int { return 1 }, func(int, int) int { return 0 })
-			if len(groups) != 1 {
-				t.Fatalf("groups = %d, want one shared test group", len(groups))
+			clusters := GroupBy(tt.servers, func(Server) int { return 1 }, func(int, int) int { return 0 })
+			if len(clusters) != 1 || len(clusters[0].Groups) != 1 {
+				t.Fatalf("result = %#v, want one cluster with one group", clusters)
 			}
-			got := make([]string, len(groups[0].Servers))
-			for i, server := range groups[0].Servers {
+			got := make([]string, len(clusters[0].Groups[0].Servers))
+			for i, server := range clusters[0].Groups[0].Servers {
 				got[i] = server.Name
 			}
 			if !reflect.DeepEqual(got, tt.want) {

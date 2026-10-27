@@ -4,6 +4,7 @@ import "dashboardService/baseline"
 
 // Group、Server、Service 和相关领域类型复用 baseline 的共享模型。
 type Group = baseline.Group
+type ClusterGroup = baseline.ClusterGroup
 type Role = baseline.ServiceRole
 type State = baseline.State
 type ServiceType = baseline.ServiceType

@@ -80,7 +80,14 @@ func allServiceCombinations() []baseline.Server {
 			names = append(names, string(serviceType))
 		}
 		servers = append(servers, baseline.Server{
-			Name:     strings.Join(names, "+"),
+			Name: strings.Join(names, "+"),
+			Cluster: baseline.Cluster{
+				ClusterID: mask%2 + 1,
+				ClusterRole: []baseline.ClusterRole{
+					baseline.PrimaryClusterRole,
+					baseline.SecondaryClusterRole,
+				}[mask%2],
+			},
 			IP:       "1.1.1.1",
 			State:    baseline.StateNormal,
 			Services: services,

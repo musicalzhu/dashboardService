@@ -13,9 +13,11 @@ func ExampleRenderDashboard() {
 		{Name: "node-empty"},
 	}
 
-	groups := baseline.RenderDashboard(servers, baseline.RuleExactCombination)
-	for _, group := range groups {
-		fmt.Printf("%s: %d 台服务器\n", group.Name, len(group.Servers))
+	clusters := baseline.RenderDashboard(servers, baseline.RuleExactCombination)
+	for _, cluster := range clusters {
+		for _, group := range cluster.Groups {
+			fmt.Printf("%s: %d 台服务器\n", group.Name, len(group.Servers))
+		}
 	}
 
 	// Output:

@@ -55,11 +55,11 @@ func NewGrouping(opts ...Option) (*Grouping, error) {
 }
 
 // Apply 使用已配置的函数执行共享分组、排序及未知服务处理流程。
-func (grouping *Grouping) Apply(servers []Server) []Group {
+func (grouping *Grouping) Apply(servers []Server) []ClusterGroup {
 	if grouping == nil {
 		panic("options.Grouping.Apply: nil Grouping")
 	}
-	return baseline.GroupServersBy(servers, grouping.keyFn, grouping.cmpFn)
+	return baseline.GroupBy(servers, grouping.keyFn, grouping.cmpFn)
 }
 
 // ParseGroupRule 调用 baseline 解析外部规则名称。

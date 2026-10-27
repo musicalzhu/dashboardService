@@ -46,42 +46,15 @@ func MarshalFlatGroups(groups []Group) ([]byte, error) {
 
 // MarshalDashboard 按指定分组规则生成结果，并编码为嵌套或平铺 UI 结构。
 func MarshalDashboard(servers []Server, rule GroupRule, format JSONFormat) ([]byte, error) {
-	groups := RenderDashboard(servers, rule)
-	switch format {
-	case JSONNested:
-		return MarshalGroups(groups)
-	case JSONFlat:
-		return MarshalFlatGroups(groups)
-	default:
-		return nil, fmt.Errorf("MarshalDashboard: 无效的 JSONFormat %d", format)
-	}
-}
-
-// MarshalClusterDashboard 按集群聚合服务器，在每个集群内应用所选规则，
-// 并编码为嵌套分组或平铺行。
-func MarshalClusterDashboard(servers []Server, rule GroupRule, format JSONFormat) ([]byte, error) {
-	clusters := RenderClusterDashboardByRule(servers, rule)
+	clusters := RenderDashboard(servers, rule)
 	switch format {
 	case JSONNested:
 		return json.MarshalIndent(clusters, "", "  ")
 	case JSONFlat:
 		return json.MarshalIndent(flattenClusterGroups(clusters), "", "  ")
 	default:
-		return nil, fmt.Errorf("MarshalClusterDashboard: 无效的 JSONFormat %d", format)
+		return nil, fmt.Errorf("MarshalDashboard: 无效的 JSONFormat %d", format)
 	}
-}
-
-// RenderClusterDashboard 按主服务规则生成集群分组，保留原有调用入口。
-func RenderClusterDashboard(servers []Server) []ClusterGroup {
-	return RenderClusterDashboardByRule(servers, RulePrimaryService)
-}
-
-// RenderClusterDashboardByRule 按 ClusterID 聚合服务器，并在每个集群中应用指定规则。
-// 集群元数据取相同 ClusterID 在输入中首次出现的值。
-func RenderClusterDashboardByRule(servers []Server, rule GroupRule) []ClusterGroup {
-	return groupServersByCluster(servers, func(clusterServers []Server) []Group {
-		return RenderDashboard(clusterServers, rule)
-	})
 }
 
 func groupServersByCluster(servers []Server, group func([]Server) []Group) []ClusterGroup {

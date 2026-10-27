@@ -3,12 +3,12 @@ package closure
 import "dashboardService/baseline"
 
 // Grouper 是可直接调用的分组规则。
-type Grouper func(servers []Server) []Group
+type Grouper func(servers []Server) []ClusterGroup
 
 // makeGrouper 将分组键和组间比较器闭包为一个可直接调用的规则函数。
 func makeGrouper(keyOf baseline.KeyFunc, cmp baseline.CompareFunc) Grouper {
-	return func(servers []Server) []Group {
-		return baseline.GroupServersBy(servers, keyOf, cmp)
+	return func(servers []Server) []ClusterGroup {
+		return baseline.GroupBy(servers, keyOf, cmp)
 	}
 }
 

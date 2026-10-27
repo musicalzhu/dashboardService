@@ -34,7 +34,11 @@ type exactPrimary struct{}
 type exactConvention struct{}
 type primaryService struct{}
 
-func (exactCombination) Group(servers []Server) []Group {
+func (g exactCombination) Group(servers []Server) []ClusterGroup {
+	return groupByCluster(servers, g.groups)
+}
+
+func (exactCombination) groups(servers []Server) []Group {
 	prepare := func(server Server) Server {
 		server.Services = slices.Clone(server.Services)
 		slices.SortStableFunc(server.Services, func(a, b Service) int {
@@ -70,7 +74,11 @@ func (exactCombination) Group(servers []Server) []Group {
 	return groups
 }
 
-func (exactServiceCount) Group(servers []Server) []Group {
+func (g exactServiceCount) Group(servers []Server) []ClusterGroup {
+	return groupByCluster(servers, g.groups)
+}
+
+func (exactServiceCount) groups(servers []Server) []Group {
 	prepare := func(server Server) Server {
 		server.Services = slices.Clone(server.Services)
 		slices.SortStableFunc(server.Services, func(a, b Service) int {
@@ -108,7 +116,11 @@ func (exactServiceCount) Group(servers []Server) []Group {
 	return groups
 }
 
-func (exactPrimary) Group(servers []Server) []Group {
+func (g exactPrimary) Group(servers []Server) []ClusterGroup {
+	return groupByCluster(servers, g.groups)
+}
+
+func (exactPrimary) groups(servers []Server) []Group {
 	prepare := func(server Server) Server {
 		server.Services = slices.Clone(server.Services)
 		slices.SortStableFunc(server.Services, func(a, b Service) int {
@@ -151,7 +163,11 @@ func (exactPrimary) Group(servers []Server) []Group {
 	return groups
 }
 
-func (exactConvention) Group(servers []Server) []Group {
+func (g exactConvention) Group(servers []Server) []ClusterGroup {
+	return groupByCluster(servers, g.groups)
+}
+
+func (exactConvention) groups(servers []Server) []Group {
 	prepare := func(server Server) Server {
 		server.Services = slices.Clone(server.Services)
 		slices.SortStableFunc(server.Services, func(a, b Service) int {
@@ -199,7 +215,11 @@ func (exactConvention) Group(servers []Server) []Group {
 	return groups
 }
 
-func (primaryService) Group(servers []Server) []Group {
+func (g primaryService) Group(servers []Server) []ClusterGroup {
+	return groupByCluster(servers, g.groups)
+}
+
+func (primaryService) groups(servers []Server) []Group {
 	prepare := func(server Server) Server {
 		server.Services = slices.Clone(server.Services)
 		slices.SortStableFunc(server.Services, func(a, b Service) int {
