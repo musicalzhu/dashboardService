@@ -1,6 +1,7 @@
 package baseline
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -94,27 +95,8 @@ func flattenClusterGroups(clusters []ClusterGroup) []flatClusterRow {
 }
 
 func compareClusterGroups(a, b ClusterGroup) int {
-	if rankA, rankB := clusterRoleRank(a.ClusterRole), clusterRoleRank(b.ClusterRole); rankA != rankB {
-		return rankA - rankB
-	}
-	if a.ClusterID < b.ClusterID {
-		return -1
-	}
-	if a.ClusterID > b.ClusterID {
-		return 1
-	}
-	return 0
-}
-
-func clusterRoleRank(role ClusterRole) int {
-	switch role {
-	case PrimaryClusterRole:
-		return 0
-	case SecondaryClusterRole:
-		return 1
-	case ArbiterClusterRole:
-		return 2
-	default:
-		return 3
-	}
+	return cmp.Or(
+		cmp.Compare(priorityOf(clusterRolePriority, a.ClusterRole), priorityOf(clusterRolePriority, b.ClusterRole)),
+		cmp.Compare(a.ClusterID, b.ClusterID),
+	)
 }

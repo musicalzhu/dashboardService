@@ -50,13 +50,13 @@ func groupBy(servers []Server, keyOf func(Server) int, compareKeys func(a, b int
 		keys = append(keys, key)
 	}
 
-	// 特殊组按固定优先级排序；普通组之间的顺序完全委托给业务 comparator。
-	// cmp.Compare 负责比较特殊组优先级，避免这些保留负键被当作普通键传给业务 comparator。
+	// 特殊组按配置的优先级排序；普通组之间的顺序完全委托给业务 comparator。
+	// 特殊组优先级不同则不调用业务 comparator，避免保留键混入普通键排序。
 	slices.SortFunc(keys, func(a, b int) int {
 		if a == b {
 			return 0
 		}
-		if order := cmp.Compare(groupKeySortPriority(a), groupKeySortPriority(b)); order != 0 {
+		if order := cmp.Compare(specialGroupPriority[a], specialGroupPriority[b]); order != 0 {
 			return order
 		}
 		return compareKeys(a, b)
@@ -75,17 +75,6 @@ func groupBy(servers []Server, keyOf func(Server) int, compareKeys func(a, b int
 		groups[i] = Group{Key: key, Name: name, Servers: byKey[key]}
 	}
 	return groups
-}
-
-func groupKeySortPriority(key int) int {
-	switch key {
-	case unknownServiceGroupKey:
-		return 1
-	case noServiceGroupKey:
-		return 2
-	default:
-		return 0
-	}
 }
 
 // GroupBy 按 ClusterID 聚合服务器，并在每个集群内使用指定键函数和比较器分组。

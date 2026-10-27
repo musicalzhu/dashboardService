@@ -10,7 +10,7 @@ import (
 func prepareServer(server Server) Server {
 	server.Services = slices.Clone(server.Services)
 	slices.SortStableFunc(server.Services, func(a, b Service) int {
-		return cmp.Compare(serviceTypeRank(a.ServiceType), serviceTypeRank(b.ServiceType))
+		return cmp.Compare(priorityOf(servicePriority, a.ServiceType), priorityOf(servicePriority, b.ServiceType))
 	})
 	return server
 }
@@ -31,7 +31,7 @@ func compareServerServices(a, b []Service) int {
 	for i := 0; i < min(len(a), len(b)); i++ {
 		serviceA, serviceB := a[i], b[i]
 		if c := cmp.Or(
-			cmp.Compare(serviceTypeRank(serviceA.ServiceType), serviceTypeRank(serviceB.ServiceType)),
+			cmp.Compare(priorityOf(servicePriority, serviceA.ServiceType), priorityOf(servicePriority, serviceB.ServiceType)),
 			compareRole(serviceA.Role, serviceB.Role),
 		); c != 0 {
 			return c
@@ -44,18 +44,8 @@ func compareState(a, b State) int {
 	if a == b {
 		return 0
 	}
-	rank := func(state State) int {
-		switch state {
-		case StateAbnormal:
-			return 0
-		case StateNormal:
-			return 1
-		default:
-			return 2
-		}
-	}
 	return cmp.Or(
-		cmp.Compare(rank(a), rank(b)),
+		cmp.Compare(priorityOf(statePriority, a), priorityOf(statePriority, b)),
 		cmp.Compare(string(a), string(b)),
 	)
 }
@@ -64,24 +54,8 @@ func compareRole(a, b ServiceRole) int {
 	if a == b {
 		return 0
 	}
-	rank := func(role ServiceRole) int {
-		switch role {
-		case Leader:
-			return 0
-		case Follower:
-			return 1
-		case LSS:
-			return 2
-		case SSRole:
-			return 3
-		case DSRole:
-			return 4
-		default:
-			return 5
-		}
-	}
 	return cmp.Or(
-		cmp.Compare(rank(a), rank(b)),
+		cmp.Compare(priorityOf(rolePriority, a), priorityOf(rolePriority, b)),
 		cmp.Compare(string(a), string(b)),
 	)
 }

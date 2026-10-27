@@ -34,16 +34,6 @@ var comboOrderList = []int{
 	dsBit,
 }
 
-// serviceTypeRank 返回服务类型的展示优先级；未知类型排在已知类型之后。
-func serviceTypeRank(serviceType ServiceType) int {
-	for i, known := range allServiceTypes {
-		if known == serviceType {
-			return i
-		}
-	}
-	return len(allServiceTypes)
-}
-
 // primaryIndex 返回 mask 中最高优先级服务的索引；空 mask 返回服务类型数。
 func primaryIndex(mask int) int {
 	for i, serviceType := range allServiceTypes {
