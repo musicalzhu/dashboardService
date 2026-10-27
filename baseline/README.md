@@ -13,8 +13,7 @@
 | [`dashboard.go`](./dashboard.go) | 私有单层分组骨架、集群聚合 `GroupBy` 及 switch 基线入口 `RenderDashboard` |
 | [`model.go`](./model.go) | baseline 自有领域模型及 dashboard 输出结构 |
 | [`rules.go`](./rules.go) | 规则常量、名称解析和 `String` |
-| [`mask.go`](./mask.go) | 服务优先级、mask、组合名称、主服务投影 |
-| [`compare.go`](./compare.go) | Services 预处理、组内服务器排序、组间比较器 |
+| [`compare.go`](./compare.go) | 排序优先级配置、服务 mask、Services 预处理、组内/组间比较器 |
 | [`json.go`](./json.go) | 分组和集群 UI 结构转换、JSON 编码边界 |
 | [`dashboard_test.go`](./dashboard_test.go) | 共享规则行为、边界和排序的唯一权威测试 |
 | [`cluster_dashboard_test.go`](./cluster_dashboard_test.go) | 集群结构、集群排序、未知/无服务保留及输入不可变性测试 |
