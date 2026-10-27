@@ -59,7 +59,7 @@ func (grouping *Grouping) Apply(servers []Server) []Group {
 	if grouping == nil {
 		panic("options.Grouping.Apply: nil Grouping")
 	}
-	return baseline.GroupBy(servers, grouping.keyFn, grouping.cmpFn)
+	return baseline.GroupServersBy(servers, grouping.keyFn, grouping.cmpFn)
 }
 
 // ParseGroupRule 调用 baseline 解析外部规则名称。

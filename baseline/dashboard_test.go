@@ -45,7 +45,7 @@ func TestGroupByRetainsZeroKeyServers(t *testing.T) {
 		{Name: "no-service"},
 	}
 
-	groups := GroupBy(servers, func(Server) int { return 0 }, CompareByMaskDesc)
+	groups := GroupServersBy(servers, func(Server) int { return 0 }, CompareByMaskDesc)
 	if len(groups) != 2 {
 		t.Fatalf("group count = %d, want zero-key and no-service groups", len(groups))
 	}
@@ -58,6 +58,55 @@ func TestGroupByRetainsZeroKeyServers(t *testing.T) {
 	}
 }
 
+func TestGroupByReturnsFrontendClustersForTwoClusters(t *testing.T) {
+	servers := []Server{
+		{
+			Name:     "secondary-ts",
+			Cluster:  Cluster{ClusterID: 2, ClusterRole: SecondaryClusterRole, ClusterName: "secondary"},
+			Services: []Service{{ServiceType: TSType}},
+		},
+		{
+			Name:     "primary-as",
+			Cluster:  Cluster{ClusterID: 1, ClusterRole: PrimaryClusterRole, ClusterName: "primary"},
+			Services: []Service{{ServiceType: ASType}},
+		},
+		{
+			Name:     "primary-ts",
+			Cluster:  Cluster{ClusterID: 1, ClusterRole: PrimaryClusterRole, ClusterName: "primary"},
+			Services: []Service{{ServiceType: TSType}},
+		},
+	}
+
+	got := GroupBy(servers, func(server Server) int {
+		switch server.Services[0].ServiceType {
+		case ASType:
+			return 1
+		case TSType:
+			return 2
+		default:
+			return 0
+		}
+	}, func(a, b int) int { return a - b })
+
+	if len(got) != 2 {
+		t.Fatalf("cluster count = %d, want 2", len(got))
+	}
+	if got[0].ClusterID != 1 || got[0].ClusterRole != PrimaryClusterRole ||
+		got[0].ClusterName != "primary" {
+		t.Fatalf("first cluster = %#v, want primary cluster", got[0].Cluster)
+	}
+	if len(got[0].Groups) != 2 ||
+		got[0].Groups[0].Key != 1 || got[0].Groups[0].Servers[0].Name != "primary-as" ||
+		got[0].Groups[1].Key != 2 || got[0].Groups[1].Servers[0].Name != "primary-ts" {
+		t.Errorf("primary groups = %#v, want distinct sorted AS and TS groups", got[0].Groups)
+	}
+	if got[1].ClusterID != 2 || got[1].ClusterRole != SecondaryClusterRole ||
+		len(got[1].Groups) != 1 || got[1].Groups[0].Key != 2 ||
+		got[1].Groups[0].Servers[0].Name != "secondary-ts" {
+		t.Errorf("second cluster = %#v, want secondary cluster with its own TS group", got[1])
+	}
+}
+
 // TestGroupByRejectsReservedNegativeKeys 验证自定义函数不能返回内部特殊组键。
 func TestGroupByRejectsReservedNegativeKeys(t *testing.T) {
 	defer func() {
@@ -65,7 +114,7 @@ func TestGroupByRejectsReservedNegativeKeys(t *testing.T) {
 			t.Fatal("negative key should panic")
 		}
 	}()
-	GroupBy(
+	GroupServersBy(
 		[]Server{{Name: "node", Services: []Service{{ServiceType: ASType}}}},
 		func(Server) int { return -1 },
 		CompareByMaskDesc,
@@ -273,7 +322,7 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			groups := GroupBy(tt.servers, func(Server) int { return 1 }, func(int, int) int { return 0 })
+			groups := GroupServersBy(tt.servers, func(Server) int { return 1 }, func(int, int) int { return 0 })
 			if len(groups) != 1 {
 				t.Fatalf("groups = %d, want one shared test group", len(groups))
 			}

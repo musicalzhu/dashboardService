@@ -79,6 +79,12 @@ func RenderClusterDashboard(servers []Server) []ClusterGroup {
 // RenderClusterDashboardByRule 按 ClusterID 聚合服务器，并在每个集群中应用指定规则。
 // 集群元数据取相同 ClusterID 在输入中首次出现的值。
 func RenderClusterDashboardByRule(servers []Server, rule GroupRule) []ClusterGroup {
+	return groupServersByCluster(servers, func(clusterServers []Server) []Group {
+		return RenderDashboard(clusterServers, rule)
+	})
+}
+
+func groupServersByCluster(servers []Server, group func([]Server) []Group) []ClusterGroup {
 	clusterByID := make(map[int]Cluster)
 	serversByCluster := make(map[int][]Server)
 	for _, server := range servers {
@@ -93,7 +99,7 @@ func RenderClusterDashboardByRule(servers []Server, rule GroupRule) []ClusterGro
 	for clusterID, cluster := range clusterByID {
 		clusters = append(clusters, ClusterGroup{
 			Cluster: cluster,
-			Groups:  RenderDashboard(serversByCluster[clusterID], rule),
+			Groups:  group(serversByCluster[clusterID]),
 		})
 	}
 	slices.SortFunc(clusters, compareClusterGroups)

@@ -8,7 +8,7 @@ type Grouper func(servers []Server) []Group
 // makeGrouper 将分组键和组间比较器闭包为一个可直接调用的规则函数。
 func makeGrouper(keyOf baseline.KeyFunc, cmp baseline.CompareFunc) Grouper {
 	return func(servers []Server) []Group {
-		return baseline.GroupBy(servers, keyOf, cmp)
+		return baseline.GroupServersBy(servers, keyOf, cmp)
 	}
 }
 

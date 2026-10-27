@@ -11,5 +11,5 @@ func RenderDashboard(servers []Server, rule GroupRule) []Group {
 	if !ok {
 		panic("datadriven.RenderDashboard: invalid GroupRule")
 	}
-	return baseline.GroupBy(servers, impl.keyOf, impl.cmp)
+	return baseline.GroupServersBy(servers, impl.keyOf, impl.cmp)
 }

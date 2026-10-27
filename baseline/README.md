@@ -10,7 +10,7 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| [`dashboard.go`](./dashboard.go) | `Group`、共享 `GroupBy` 骨架及 switch 基线入口 `RenderDashboard` |
+| [`dashboard.go`](./dashboard.go) | 共享单层分组骨架、集群聚合 `GroupBy` 及 switch 基线入口 `RenderDashboard` |
 | [`model.go`](./model.go) | baseline 自有领域模型及 dashboard 输出结构 |
 | [`rules.go`](./rules.go) | 规则常量、名称解析和 `String` |
 | [`mask.go`](./mask.go) | 服务优先级、mask、组合名称、主服务投影 |
@@ -30,8 +30,8 @@
 | 闭包组合 | `closure` | 直接调用规则函数变量，如 `RulePrimaryService(servers)` | [`../closure/closure.go`](../closure/closure.go) |
 | 纯策略模式 | `purestrategy` | `Grouper` 接口 + `map[GroupRule]Grouper`，每个策略独立实现分组流程 | [`../purestrategy/implementations.go`](../purestrategy/implementations.go) |
 
-`baseline` 对外提供 `GroupBy`、`MaskOf`、`PrimaryServiceMask` 和各组间比较函数，目的是让
-候选方案只改变“如何选择规则”，而不是重复实现服务分组和排序算法。`GroupBy` 也集中处理：
+`baseline` 对外提供按集群聚合的 `GroupBy`、单层 `GroupServersBy`、`MaskOf`、`PrimaryServiceMask` 和各组间比较函数，目的是让
+候选方案只改变“如何选择规则”，而不是重复实现服务分组和排序算法。`GroupServersBy` 也集中处理：
 
 - `Services` 为空：进入专用的“无服务”组，固定最后。
 - 任意服务类型未知：整台服务器进入专用的“未知服务”组；已知与未知混合时也按未知处理，
@@ -53,6 +53,7 @@ Leader→Follower→LSS→SS→DS→其他角色比较。服务状态不参与�
 
 | API | 输出 | 用途 |
 | --- | --- | --- |
+| `GroupBy(servers, keyFn, cmpFn)` | `[]ClusterGroup` | 按集群聚合，并在每个集群内应用指定的分组规则 |
 | `MarshalDashboard(servers, rule, JSONNested)` | `[]Group` | 通用分组 JSON |
 | `MarshalDashboard(servers, rule, JSONFlat)` | 分组名及服务器组成的平铺条目数组 | 保留规则排序 |
 | `MarshalClusterDashboard(servers, rule, JSONNested)` | `[]ClusterGroup` | 按集群聚合的嵌套分组 |
@@ -89,7 +90,7 @@ Options 和 Closure POC 的规则 API 与语义保持不变。
 
 | 责任 | 对象 | 共享实现 |
 | --- | --- | --- |
-| 服务分组 | 输入服务器到组的归属 | `MaskOf` / `PrimaryServiceMask` 与 `GroupBy` |
+| 服务分组 | 输入服务器到组的归属 | `MaskOf` / `PrimaryServiceMask` 与 `GroupServersBy` |
 | 组间排序 | 已形成的服务组 | `CompareByMaskDesc`、`CompareByServiceCount`、`CompareByPrimary`、`CompareByConvention` |
 | 组内服务器排序 | 同一组的服务器 | `compareServers` |
 | 服务器内服务排序 | 单台服务器的 Services | `prepareServer` |
@@ -98,7 +99,8 @@ Options 和 Closure POC 的规则 API 与语义保持不变。
 
 | 函数 | 用途 |
 | --- | --- |
-| `GroupBy(servers, keyFn, cmpFn)` | 用指定函数运行统一分组骨架 |
+| `GroupBy(servers, keyFn, cmpFn)` | 按集群聚合，并用指定函数返回前端所需的 `[]ClusterGroup` |
+| `GroupServersBy(servers, keyFn, cmpFn)` | 用指定函数运行统一单层分组骨架，返回 `[]Group` |
 | `MaskOf(server)` | 计算服务器已知服务的完整 mask |
 | `PrimaryServiceMask(server)` | 计算最高优先级服务对应的单个 bit |
 | `CompareByMaskDesc(a, b)` | 组 key 按 mask 降序 |
@@ -110,7 +112,7 @@ Options 和 Closure POC 的规则 API 与语义保持不变。
 | `MarshalDashboard(servers, rule, format)` | 按规则分组后编码成嵌套或平铺 JSON |
 | `MarshalClusterDashboard(servers, rule, format)` | 按集群聚合并编码所选规则的嵌套或平铺 JSON |
 
-`GroupBy` 的普通分组键允许为 0；负键保留给内部未知服务组和无服务组，回调返回负键会明确 panic，
+`GroupServersBy` 和 `GroupBy` 的普通分组键允许为 0；负键保留给内部未知服务组和无服务组，回调返回负键会明确 panic，
 不会与特殊组混淆。键为 0 的普通组显示名为“键 0”。无效的 `GroupRule.String()` 会返回
 `GroupRule(n)`，不会因枚举越界而 panic。
 

@@ -30,7 +30,7 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 
 		key := keyOf(server)
 		if key < 0 {
-			panic("baseline.GroupBy: key function must return a non-negative key")
+			panic("baseline.groupBy: key function must return a non-negative key")
 		}
 		byKey[key] = append(byKey[key], server)
 	}
@@ -69,17 +69,31 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 	return groups
 }
 
-// GroupBy 使用指定的键函数和组间比较器执行共享分组流程。
+// GroupServersBy 使用指定的键函数和组间比较器返回共享分组结果。
 // keyFn 必须返回非负键；0 是有效的普通分组键。负键由 baseline 保留给未知服务和无服务分组。
-// 该函数供不同 POC 复用算法，以便只比较规则选择方式。
-func GroupBy(servers []Server, keyOf KeyFunc, cmp CompareFunc) []Group {
+// 该函数供不同 POC 复用单层分组算法，以便只比较规则选择方式。
+func GroupServersBy(servers []Server, keyOf KeyFunc, cmp CompareFunc) []Group {
+	if keyOf == nil {
+		panic("baseline.GroupServersBy: nil key function")
+	}
+	if cmp == nil {
+		panic("baseline.GroupServersBy: nil comparator")
+	}
+	return groupBy(servers, keyOf, cmp)
+}
+
+// GroupBy 按 ClusterID 聚合服务器，并在每个集群内使用指定键函数和比较器分组。
+// 返回的集群及组顺序符合 Dashboard 展示顺序。
+func GroupBy(servers []Server, keyOf KeyFunc, cmp CompareFunc) []ClusterGroup {
 	if keyOf == nil {
 		panic("baseline.GroupBy: nil key function")
 	}
 	if cmp == nil {
 		panic("baseline.GroupBy: nil comparator")
 	}
-	return groupBy(servers, keyOf, cmp)
+	return groupServersByCluster(servers, func(clusterServers []Server) []Group {
+		return groupBy(clusterServers, keyOf, cmp)
+	})
 }
 
 // RenderDashboard 按朴素 switch 选择分组键与组间排序函数，再调用共享骨架。
@@ -89,15 +103,15 @@ func GroupBy(servers []Server, keyOf KeyFunc, cmp CompareFunc) []Group {
 func RenderDashboard(servers []Server, rule GroupRule) []Group {
 	switch rule {
 	case RuleExactCombination:
-		return GroupBy(servers, MaskOf, CompareByMaskDesc)
+		return GroupServersBy(servers, MaskOf, CompareByMaskDesc)
 	case RuleExactServiceCount:
-		return GroupBy(servers, MaskOf, CompareByServiceCount)
+		return GroupServersBy(servers, MaskOf, CompareByServiceCount)
 	case RuleExactPrimary:
-		return GroupBy(servers, MaskOf, CompareByPrimary)
+		return GroupServersBy(servers, MaskOf, CompareByPrimary)
 	case RuleExactConvention:
-		return GroupBy(servers, MaskOf, CompareByConvention)
+		return GroupServersBy(servers, MaskOf, CompareByConvention)
 	case RulePrimaryService:
-		return GroupBy(servers, PrimaryServiceMask, CompareByMaskDesc)
+		return GroupServersBy(servers, PrimaryServiceMask, CompareByMaskDesc)
 	default:
 		panic(fmt.Sprintf("RenderDashboard: 无效的 GroupRule %d", int(rule)))
 	}
