@@ -11,13 +11,19 @@ type KeyFunc func(Server) int
 // CompareFunc 按 slices.SortFunc 约定比较两个分组键。
 type CompareFunc func(a, b int) int
 
-// groupBy 是五种规则共享的执行骨架：准备输入、按 key 分桶、组内排序、
-// 按 cmp 排组，并组装返回结果。含未知类型的服务器进入独立未知服务组，
-// 该组排在已知组合后、无服务组前；空 Services 的服务器进入独立无服务组并固定排最后。
+// groupBy 是各分组规则共享的执行骨架。它先规范化服务器的 Services，
+// 再将服务器分桶、排序各桶中的服务器、排序分组键，最后组装 Group 结果。
+//
+// 空 Services 和含未知服务类型的服务器分别进入专用分组，不调用 keyOf：
+// 无服务组固定排最后，未知服务组排在普通分组之后、无服务组之前。
+// 普通分组键必须非负；负键由 baseline 保留给这两个专用分组。
 func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) []Group {
 	byKey := make(map[int][]Server)
 	for _, server := range servers {
+		// 复制并整理 Services，确保后续排序使用稳定顺序且不修改调用方输入。
 		server = prepareServer(server)
+
+		// 无服务与未知服务拥有自己的组键，必须在计算业务分组键前识别。
 		if len(server.Services) == 0 {
 			byKey[noServiceGroupKey] = append(byKey[noServiceGroupKey], server)
 			continue
@@ -28,6 +34,7 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 			continue
 		}
 
+		// 只有含已知服务的服务器才参与当前规则的分组键计算。
 		key := keyOf(server)
 		if key < 0 {
 			panic("baseline.groupBy: key function must return a non-negative key")
@@ -35,11 +42,15 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 		byKey[key] = append(byKey[key], server)
 	}
 
+	// 在每个桶内排序服务器，并收集实际出现的分组键。
 	keys := make([]int, 0, len(byKey))
 	for key, group := range byKey {
 		slices.SortFunc(group, compareServers)
 		keys = append(keys, key)
 	}
+
+	// 专用组不受业务 comparator 控制，以免特殊负键混入普通规则排序。
+	// 普通组之间的顺序完全由 cmp 决定。
 	slices.SortFunc(keys, func(a, b int) int {
 		if a == unknownServiceGroupKey && b != unknownServiceGroupKey && b != noServiceGroupKey {
 			return 1
@@ -56,6 +67,7 @@ func groupBy(servers []Server, keyOf func(Server) int, cmp func(a, b int) int) [
 		return cmp(a, b)
 	})
 
+	// 按已经确定的键顺序构造结果；make 保证空输入也返回非 nil 的空切片。
 	groups := make([]Group, len(keys))
 	for i, key := range keys {
 		name := groupName(key)
