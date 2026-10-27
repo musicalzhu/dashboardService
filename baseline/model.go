@@ -105,8 +105,6 @@ type Server struct {
 type Service struct {
 	// ServiceType 是服务类型，JSON 字段名为 type。
 	ServiceType ServiceType `json:"type"`
-	// PaxosGroup 是该服务所属的 Paxos 组，不适用时可为空。
-	PaxosGroup string `json:"paxos_group"`
 	// ServiceRole 是该服务的角色，不适用时可为空。
 	Role ServiceRole `json:"role"`
 	// State 是该服务的运行状态。
