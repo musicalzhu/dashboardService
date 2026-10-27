@@ -15,31 +15,31 @@ func TestGroupersMatchBaseline(t *testing.T) {
 		baseline.Server{
 			Name: "unknown",
 			Services: []baseline.Service{
-				{ServiceType: baseline.ServiceType("XX"), State: baseline.SvcNormal},
+				{ServiceType: baseline.ServiceType("XX"), State: baseline.ServiceNormal},
 			},
 		},
 		baseline.Server{
 			Name: "mixed-unknown",
 			Services: []baseline.Service{
-				{ServiceType: baseline.AS, State: baseline.SvcNormal},
-				{ServiceType: baseline.ServiceType("XX"), State: baseline.SvcNormal},
+				{ServiceType: baseline.ASType, State: baseline.ServiceNormal},
+				{ServiceType: baseline.ServiceType("XX"), State: baseline.ServiceNormal},
 			},
 		},
 		baseline.Server{Name: "no-service"},
 		baseline.Server{
 			Name:  "as-normal-follower",
 			IP:    "10.0.0.1",
-			State: baseline.SrvNormal,
+			State: baseline.ServerNormal,
 			Services: []baseline.Service{
-				{ServiceType: baseline.AS, Role: baseline.Follower},
+				{ServiceType: baseline.ASType, Role: baseline.Follower},
 			},
 		},
 		baseline.Server{
 			Name:  "as-abnormal-leader",
 			IP:    "10.0.0.2",
-			State: baseline.SrvAbnormal,
+			State: baseline.ServerAbnormal,
 			Services: []baseline.Service{
-				{ServiceType: baseline.AS, Role: baseline.Leader},
+				{ServiceType: baseline.ASType, Role: baseline.Leader},
 			},
 		},
 	)
@@ -64,7 +64,7 @@ func TestGroupersMatchBaseline(t *testing.T) {
 }
 
 func allServiceCombinations() []baseline.Server {
-	serviceTypes := []baseline.ServiceType{baseline.AS, baseline.TS, baseline.SS, baseline.DS}
+	serviceTypes := []baseline.ServiceType{baseline.ASType, baseline.TSType, baseline.SSType, baseline.DSType}
 	servers := make([]baseline.Server, 0, (1<<len(serviceTypes))-1)
 	for mask := 1; mask < 1<<len(serviceTypes); mask++ {
 		var services []baseline.Service
@@ -95,8 +95,8 @@ func TestStrategiesDoNotMutateServiceInput(t *testing.T) {
 			servers := []baseline.Server{{
 				Name: "node",
 				Services: []baseline.Service{
-					{ServiceType: baseline.TS, Role: baseline.Follower},
-					{ServiceType: baseline.AS, Role: baseline.Leader},
+					{ServiceType: baseline.TSType, Role: baseline.Follower},
+					{ServiceType: baseline.ASType, Role: baseline.Leader},
 				},
 			}}
 			original := append([]baseline.Service(nil), servers[0].Services...)

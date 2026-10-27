@@ -22,9 +22,9 @@ func TestMarshalGroupsIsPublic(t *testing.T) {
 
 func TestMarshalDashboardFormatsPreserveRuleOrder(t *testing.T) {
 	servers := []baseline.Server{
-		{Name: "as-ts", Services: []baseline.Service{{ServiceType: baseline.AS}, {ServiceType: baseline.TS}}},
-		{Name: "ts", Services: []baseline.Service{{ServiceType: baseline.TS}}},
-		{Name: "as", Services: []baseline.Service{{ServiceType: baseline.AS}}},
+		{Name: "as-ts", Services: []baseline.Service{{ServiceType: baseline.ASType}, {ServiceType: baseline.TSType}}},
+		{Name: "ts", Services: []baseline.Service{{ServiceType: baseline.TSType}}},
+		{Name: "as", Services: []baseline.Service{{ServiceType: baseline.ASType}}},
 	}
 	rules := []baseline.GroupRule{
 		baseline.RuleExactCombination,
@@ -60,7 +60,10 @@ func TestMarshalDashboardFormatsPreserveRuleOrder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("MarshalDashboard(flat) error: %v", err)
 			}
-			var flat []baseline.FlatGroup
+			var flat []struct {
+				Name    string            `json:"group"`
+				Servers []baseline.Server `json:"servers"`
+			}
 			if err := json.Unmarshal(flatJSON, &flat); err != nil {
 				t.Fatalf("decode flat JSON: %v", err)
 			}
@@ -82,12 +85,12 @@ func TestMarshalClusterDashboardUsesSelectedRuleAndFlatRows(t *testing.T) {
 		{
 			Name:     "as-ts",
 			Cluster:  baseline.Cluster{ClusterID: 2, ClusterRole: "primary", ClusterName: "cluster"},
-			Services: []baseline.Service{{ServiceType: baseline.AS}, {ServiceType: baseline.TS}},
+			Services: []baseline.Service{{ServiceType: baseline.ASType}, {ServiceType: baseline.TSType}},
 		},
 		{
 			Name:     "ts",
 			Cluster:  baseline.Cluster{ClusterID: 2, ClusterRole: "primary", ClusterName: "ignored-name"},
-			Services: []baseline.Service{{ServiceType: baseline.TS}},
+			Services: []baseline.Service{{ServiceType: baseline.TSType}},
 		},
 	}
 	want := baseline.RenderDashboard(servers, baseline.RuleExactCombination)
@@ -96,7 +99,7 @@ func TestMarshalClusterDashboardUsesSelectedRuleAndFlatRows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalClusterDashboard(nested) error: %v", err)
 	}
-	var nested []baseline.ClusterDashboard
+	var nested []baseline.ClusterGroup
 	if err := json.Unmarshal(nestedJSON, &nested); err != nil {
 		t.Fatalf("decode nested cluster JSON: %v", err)
 	}
@@ -117,7 +120,11 @@ func TestMarshalClusterDashboardUsesSelectedRuleAndFlatRows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalClusterDashboard(flat) error: %v", err)
 	}
-	var flat []baseline.ClusterFlatGroupEntry
+	var flat []struct {
+		ClusterID int               `json:"cluster_id"`
+		GroupName string            `json:"group"`
+		Servers   []baseline.Server `json:"servers"`
+	}
 	if err := json.Unmarshal(flatJSON, &flat); err != nil {
 		t.Fatalf("decode flat cluster JSON: %v", err)
 	}
@@ -133,9 +140,9 @@ func TestMarshalClusterDashboardUsesSelectedRuleAndFlatRows(t *testing.T) {
 
 func TestMarshalClusterDashboardSupportsAllRules(t *testing.T) {
 	servers := []baseline.Server{
-		{Name: "as-ts", Cluster: baseline.Cluster{ClusterID: 1}, Services: []baseline.Service{{ServiceType: baseline.AS}, {ServiceType: baseline.TS}}},
-		{Name: "as-ss", Cluster: baseline.Cluster{ClusterID: 1}, Services: []baseline.Service{{ServiceType: baseline.AS}, {ServiceType: baseline.SS}}},
-		{Name: "ts", Cluster: baseline.Cluster{ClusterID: 1}, Services: []baseline.Service{{ServiceType: baseline.TS}}},
+		{Name: "as-ts", Cluster: baseline.Cluster{ClusterID: 1}, Services: []baseline.Service{{ServiceType: baseline.ASType}, {ServiceType: baseline.TSType}}},
+		{Name: "as-ss", Cluster: baseline.Cluster{ClusterID: 1}, Services: []baseline.Service{{ServiceType: baseline.ASType}, {ServiceType: baseline.SSType}}},
+		{Name: "ts", Cluster: baseline.Cluster{ClusterID: 1}, Services: []baseline.Service{{ServiceType: baseline.TSType}}},
 		{Name: "unknown", Cluster: baseline.Cluster{ClusterID: 1}, Services: []baseline.Service{{ServiceType: baseline.ServiceType("XX")}}},
 		{Name: "no-service", Cluster: baseline.Cluster{ClusterID: 1}},
 	}
@@ -155,7 +162,7 @@ func TestMarshalClusterDashboardSupportsAllRules(t *testing.T) {
 			if err != nil {
 				t.Fatalf("MarshalClusterDashboard(nested) error: %v", err)
 			}
-			var nested []baseline.ClusterDashboard
+			var nested []baseline.ClusterGroup
 			if err := json.Unmarshal(data, &nested); err != nil {
 				t.Fatalf("decode nested JSON: %v", err)
 			}
@@ -174,7 +181,10 @@ func TestMarshalClusterDashboardSupportsAllRules(t *testing.T) {
 			if err != nil {
 				t.Fatalf("MarshalClusterDashboard(flat) error: %v", err)
 			}
-			var flat []baseline.ClusterFlatGroupEntry
+			var flat []struct {
+				GroupName string            `json:"group"`
+				Servers   []baseline.Server `json:"servers"`
+			}
 			if err := json.Unmarshal(data, &flat); err != nil {
 				t.Fatalf("decode flat JSON: %v", err)
 			}

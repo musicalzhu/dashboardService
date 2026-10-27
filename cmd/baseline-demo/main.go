@@ -14,7 +14,7 @@ func main() {
 		baseline.Server{
 			Name: "unknown-service-node",
 			Services: []baseline.Service{
-				{ServiceType: baseline.ServiceType("XX"), State: baseline.SvcNormal},
+				{ServiceType: baseline.ServiceType("XX"), State: baseline.ServiceNormal},
 			},
 		},
 		baseline.Server{Name: "no-service-node", IP: "192.168.1.200"},
@@ -41,7 +41,7 @@ func main() {
 }
 
 func allServiceCombinations() []baseline.Server {
-	serviceTypes := []baseline.ServiceType{baseline.AS, baseline.TS, baseline.SS, baseline.DS}
+	serviceTypes := []baseline.ServiceType{baseline.ASType, baseline.TSType, baseline.SSType, baseline.DSType}
 	servers := make([]baseline.Server, 0, (1<<len(serviceTypes))-1)
 	for mask := 1; mask < 1<<len(serviceTypes); mask++ {
 		var services []baseline.Service

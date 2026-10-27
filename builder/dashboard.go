@@ -13,15 +13,15 @@ var roleOrder = map[Role]int{
 	Leader:   0,
 	Follower: 1,
 	LSS:      2,
-	SS:       3,
-	DS:       4,
+	SSRole:   3,
+	DSRole:   4,
 }
 
 // clusterRoleOrder 定义集群角色的排序优先级，数值越小越靠前。
-var clusterRoleOrder = map[string]int{
-	"primary":   0,
-	"secondary": 1,
-	"arbiter":   2,
+var clusterRoleOrder = map[ClusterRole]int{
+	PrimaryClusterRole:   0,
+	SecondaryClusterRole: 1,
+	ArbiterClusterRole:   2,
 }
 
 // DashboardBuilder 根据服务器数据构建 Dashboard 视图。

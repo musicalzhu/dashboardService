@@ -9,7 +9,7 @@ import (
 // ExampleRenderDashboard 展示 switch 基线如何按业务规则分组并保留空服务服务器。
 func ExampleRenderDashboard() {
 	servers := []baseline.Server{
-		{Name: "node-as", Services: []baseline.Service{{ServiceType: baseline.AS, State: baseline.SvcNormal}}},
+		{Name: "node-as", Services: []baseline.Service{{ServiceType: baseline.ASType, State: baseline.ServiceNormal}}},
 		{Name: "node-empty"},
 	}
 

@@ -6,7 +6,7 @@ import (
 )
 
 // allServiceTypes 是服务优先级及展示顺序的唯一来源。
-var allServiceTypes = []ServiceType{AS, TS, SS, DS}
+var allServiceTypes = []ServiceType{ASType, TSType, SSType, DSType}
 
 // 高优先级服务使用高位，以支持 mask 数值降序。
 const (
@@ -18,10 +18,10 @@ const (
 )
 
 var serviceBit = map[ServiceType]int{
-	AS: asBit,
-	TS: tsBit,
-	SS: ssBit,
-	DS: dsBit,
+	ASType: asBit,
+	TSType: tsBit,
+	SSType: ssBit,
+	DSType: dsBit,
 }
 
 // comboOrderList 表示 RuleExactConvention 的 15 种组合顺序。

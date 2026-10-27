@@ -23,12 +23,12 @@ const (
 
 	StateNormal   = baseline.StateNormal
 	StateAbnormal = baseline.StateAbnormal
-	AS            = baseline.AS
-	TS            = baseline.TS
-	SS            = baseline.SS
-	DS            = baseline.DS
-	SvcNormal     = baseline.SvcNormal
-	SvcAbnormal   = baseline.SvcAbnormal
-	SrvNormal     = baseline.SrvNormal
-	SrvAbnormal   = baseline.SrvAbnormal
+	AS            = baseline.ASType
+	TS            = baseline.TSType
+	SS            = baseline.SSType
+	DS            = baseline.DSType
+	SvcNormal     = baseline.ServiceNormal
+	SvcAbnormal   = baseline.ServiceAbnormal
+	SrvNormal     = baseline.ServerNormal
+	SrvAbnormal   = baseline.ServerAbnormal
 )

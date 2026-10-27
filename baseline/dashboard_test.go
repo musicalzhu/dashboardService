@@ -7,7 +7,7 @@ import (
 )
 
 func allServiceCombinations() []Server {
-	serviceTypes := []ServiceType{AS, TS, SS, DS}
+	serviceTypes := []ServiceType{ASType, TSType, SSType, DSType}
 	servers := make([]Server, 0, (1<<len(serviceTypes))-1)
 	for mask := 1; mask < 1<<len(serviceTypes); mask++ {
 		var services []Service
@@ -40,8 +40,8 @@ func TestEmptyInputReturnsEmptyGroups(t *testing.T) {
 // TestGroupByRetainsZeroKeyServers 验证零是有效普通键，且不会与无服务组混合或遗漏服务器。
 func TestGroupByRetainsZeroKeyServers(t *testing.T) {
 	servers := []Server{
-		{Name: "zero-key-a", Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-		{Name: "zero-key-b", Services: []Service{{ServiceType: TS, State: SvcNormal}}},
+		{Name: "zero-key-a", Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
+		{Name: "zero-key-b", Services: []Service{{ServiceType: TSType, State: ServiceNormal}}},
 		{Name: "no-service"},
 	}
 
@@ -66,7 +66,7 @@ func TestGroupByRejectsReservedNegativeKeys(t *testing.T) {
 		}
 	}()
 	GroupBy(
-		[]Server{{Name: "node", Services: []Service{{ServiceType: AS}}}},
+		[]Server{{Name: "node", Services: []Service{{ServiceType: ASType}}}},
 		func(Server) int { return -1 },
 		CompareByMaskDesc,
 	)
@@ -136,13 +136,13 @@ func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
 // TestUnknownServicesIncluded 验证未知类型及混合类型服务器均进入独立分组。
 func TestUnknownServicesIncluded(t *testing.T) {
 	servers := []Server{
-		{Name: "known", Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-		{Name: "unknown", Services: []Service{{ServiceType: ServiceType("XX"), State: SvcNormal}}},
+		{Name: "known", Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
+		{Name: "unknown", Services: []Service{{ServiceType: ServiceType("XX"), State: ServiceNormal}}},
 		{
 			Name: "mixed",
 			Services: []Service{
-				{ServiceType: AS, State: SvcNormal},
-				{ServiceType: ServiceType("XX"), State: SvcNormal},
+				{ServiceType: ASType, State: ServiceNormal},
+				{ServiceType: ServiceType("XX"), State: ServiceNormal},
 			},
 		},
 		{Name: "empty"},
@@ -204,68 +204,68 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 		{
 			name: "abnormal server state first",
 			servers: []Server{
-				{Name: "abnormal", State: SrvAbnormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-				{Name: "normal", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcAbnormal}}},
+				{Name: "abnormal", State: ServerAbnormal, Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
+				{Name: "normal", State: ServerNormal, Services: []Service{{ServiceType: ASType, State: ServiceAbnormal}}},
 			},
 			want: []string{"abnormal", "normal"},
 		},
 		{
 			name: "unknown server states have a consistent order",
 			servers: []Server{
-				{Name: "state-z", State: State("maintenance-z"), Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-				{Name: "state-abnormal", State: SrvAbnormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-				{Name: "state-a", State: State("maintenance-a"), Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+				{Name: "state-z", State: State("maintenance-z"), Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
+				{Name: "state-abnormal", State: ServerAbnormal, Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
+				{Name: "state-a", State: State("maintenance-a"), Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
 			},
 			want: []string{"state-abnormal", "state-a", "state-z"},
 		},
 		{
 			name: "service role",
 			servers: []Server{
-				{Name: "follower", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Follower}}},
-				{Name: "leader", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}}},
+				{Name: "follower", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Follower}}},
+				{Name: "leader", IP: "10.0.0.2", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Leader}}},
 			},
 			want: []string{"leader", "follower"},
 		},
 		{
 			name: "service roles follow declared precedence",
 			servers: []Server{
-				{Name: "ds-role", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: RoleDS}}},
-				{Name: "ss-role", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: RoleSS}}},
-				{Name: "lss-role", IP: "10.0.0.3", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: LSS}}},
-				{Name: "follower-role", IP: "10.0.0.4", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Follower}}},
-				{Name: "leader-role", IP: "10.0.0.5", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}}},
+				{Name: "ds-role", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: DSRole}}},
+				{Name: "ss-role", IP: "10.0.0.2", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: SSRole}}},
+				{Name: "lss-role", IP: "10.0.0.3", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: LSS}}},
+				{Name: "follower-role", IP: "10.0.0.4", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Follower}}},
+				{Name: "leader-role", IP: "10.0.0.5", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Leader}}},
 			},
 			want: []string{"leader-role", "follower-role", "lss-role", "ss-role", "ds-role"},
 		},
 		{
 			name: "service type",
 			servers: []Server{
-				{Name: "ds", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: DS, Role: Leader}}},
-				{Name: "ts", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: TS, Role: Leader}}},
+				{Name: "ds", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: DSType, Role: Leader}}},
+				{Name: "ts", IP: "10.0.0.2", State: ServerNormal, Services: []Service{{ServiceType: TSType, Role: Leader}}},
 			},
 			want: []string{"ts", "ds"},
 		},
 		{
 			name: "service list length precedes IP after common prefix",
 			servers: []Server{
-				{Name: "has-ts", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}, {ServiceType: TS, Role: Follower}}},
-				{Name: "as-only", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: AS, Role: Leader}}},
+				{Name: "has-ts", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Leader}, {ServiceType: TSType, Role: Follower}}},
+				{Name: "as-only", IP: "10.0.0.2", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Leader}}},
 			},
 			want: []string{"as-only", "has-ts"},
 		},
 		{
 			name: "ip",
 			servers: []Server{
-				{Name: "later-ip", IP: "10.0.0.2", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-				{Name: "earlier-ip", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+				{Name: "later-ip", IP: "10.0.0.2", State: ServerNormal, Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
+				{Name: "earlier-ip", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
 			},
 			want: []string{"earlier-ip", "later-ip"},
 		},
 		{
 			name: "name",
 			servers: []Server{
-				{Name: "zulu", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
-				{Name: "alpha", IP: "10.0.0.1", State: SrvNormal, Services: []Service{{ServiceType: AS, State: SvcNormal}}},
+				{Name: "zulu", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
+				{Name: "alpha", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: ASType, State: ServiceNormal}}},
 			},
 			want: []string{"alpha", "zulu"},
 		},

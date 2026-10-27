@@ -8,8 +8,8 @@ type State = baseline.State
 // ServiceType 是 baseline.ServiceType 的别名，表示 AS、TS、SS 或 DS 服务类型。
 type ServiceType = baseline.ServiceType
 
-// Role 是 baseline.Role 的别名，表示微服务角色。
-type Role = baseline.Role
+// Role 是 baseline.ServiceRole 的别名，表示微服务角色。
+type Role = baseline.ServiceRole
 
 // Service 是 baseline.Service 的别名，复用共享服务实例结构。
 type Service = baseline.Service
@@ -26,8 +26,8 @@ type ServiceStatus = baseline.State
 // ServerStatus 是兼容 datadriven 领域用语的状态别名，底层仍为 baseline.State。
 type ServerStatus = baseline.State
 
-// PaxosRole 是兼容 datadriven 领域用语的角色别名，底层仍为 baseline.Role。
-type PaxosRole = baseline.Role
+// PaxosRole 是兼容 datadriven 领域用语的角色别名，底层仍为 baseline.ServiceRole。
+type PaxosRole = baseline.ServiceRole
 
 const (
 	// StateNormal 是 baseline.StateNormal 的别名。
@@ -35,21 +35,21 @@ const (
 	// StateAbnormal 是 baseline.StateAbnormal 的别名。
 	StateAbnormal = baseline.StateAbnormal
 	// AS 是 baseline.ASType 的短名称。
-	AS = baseline.AS
+	AS = baseline.ASType
 	// TS 是 baseline.TSType 的短名称。
-	TS = baseline.TS
+	TS = baseline.TSType
 	// SS 是 baseline.SSType 的短名称。
-	SS = baseline.SS
+	SS = baseline.SSType
 	// DS 是 baseline.DSType 的短名称。
-	DS = baseline.DS
+	DS = baseline.DSType
 	// SvcNormal 是服务状态正常值的别名。
-	SvcNormal = baseline.SvcNormal
+	SvcNormal = baseline.ServiceNormal
 	// SvcAbnormal 是服务异常状态值的兼容别名。
-	SvcAbnormal = baseline.SvcAbnormal
+	SvcAbnormal = baseline.ServiceAbnormal
 	// SrvNormal 是服务器状态正常值的别名。
-	SrvNormal = baseline.SrvNormal
+	SrvNormal = baseline.ServerNormal
 	// SrvAbnormal 是服务器异常状态值的别名。
-	SrvAbnormal = baseline.SrvAbnormal
+	SrvAbnormal = baseline.ServerAbnormal
 	// Leader 是 baseline.Leader 的别名。
 	Leader = baseline.Leader
 	// Follower 是 baseline.Follower 的别名。

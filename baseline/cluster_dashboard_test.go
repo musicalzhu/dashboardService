@@ -1,7 +1,6 @@
 package baseline
 
 import (
-	"bytes"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -10,39 +9,24 @@ import (
 func TestRenderClusterDashboardGroupsByClusterAndPrimaryService(t *testing.T) {
 	servers := []Server{
 		{
-			Name: "secondary-ts",
-			Cluster: Cluster{
-				ClusterID:   20,
-				ClusterRole: "secondary",
-				ClusterName: "secondary",
-			},
-			Services: []Service{{ServiceType: TS, State: SvcNormal}},
+			Name:     "secondary-ts",
+			Cluster:  Cluster{ClusterID: 20, ClusterRole: SecondaryClusterRole, ClusterName: "secondary"},
+			Services: []Service{{ServiceType: TSType, State: ServiceNormal}},
 		},
 		{
-			Name: "primary-ts",
-			Cluster: Cluster{
-				ClusterID:   10,
-				ClusterRole: "primary",
-				ClusterName: "primary",
-			},
-			Services: []Service{{ServiceType: TS, State: SvcNormal}},
+			Name:     "primary-ts",
+			Cluster:  Cluster{ClusterID: 10, ClusterRole: PrimaryClusterRole, ClusterName: "primary"},
+			Services: []Service{{ServiceType: TSType, State: ServiceNormal}},
 		},
 		{
-			Name: "primary-as",
-			Cluster: Cluster{
-				ClusterID:   10,
-				ClusterRole: "primary",
-				ClusterName: "conflicting-name",
-			},
-			Services: []Service{
-				{ServiceType: TS, State: SvcNormal},
-				{ServiceType: AS, State: SvcNormal},
-			},
+			Name:     "primary-as",
+			Cluster:  Cluster{ClusterID: 10, ClusterRole: PrimaryClusterRole, ClusterName: "conflicting-name"},
+			Services: []Service{{ServiceType: TSType, State: ServiceNormal}, {ServiceType: ASType, State: ServiceNormal}},
 		},
 		{
 			Name:     "primary-five",
-			Cluster:  Cluster{ClusterID: 5, ClusterRole: "primary", ClusterName: "primary-five"},
-			Services: []Service{{ServiceType: AS, State: SvcNormal}},
+			Cluster:  Cluster{ClusterID: 5, ClusterRole: PrimaryClusterRole, ClusterName: "primary-five"},
+			Services: []Service{{ServiceType: ASType, State: ServiceNormal}},
 		},
 	}
 
@@ -54,74 +38,106 @@ func TestRenderClusterDashboardGroupsByClusterAndPrimaryService(t *testing.T) {
 		t.Fatalf("cluster order = [%d, %d, %d], want [5, 10, 20]",
 			got[0].ClusterID, got[1].ClusterID, got[2].ClusterID)
 	}
-	if len(got[1].ServiceGroups) != 2 {
-		t.Fatalf("primary cluster service group count = %d, want 2", len(got[1].ServiceGroups))
+	if len(got[1].Groups) != 2 {
+		t.Fatalf("primary cluster group count = %d, want 2", len(got[1].Groups))
 	}
 	if got[1].ClusterName != "primary" {
 		t.Errorf("cluster metadata = %q, want first-seen value %q", got[1].ClusterName, "primary")
 	}
-	if got[1].ServiceGroups[0].ServiceType != AS || got[1].ServiceGroups[1].ServiceType != TS {
-		t.Fatalf("primary cluster service order = [%s, %s], want [AS, TS]",
-			got[1].ServiceGroups[0].ServiceType, got[1].ServiceGroups[1].ServiceType)
+	if got[1].Groups[0].Name != "AS" || got[1].Groups[1].Name != "TS" {
+		t.Fatalf("primary cluster group order = [%s, %s], want [AS, TS]",
+			got[1].Groups[0].Name, got[1].Groups[1].Name)
 	}
-	if got[1].ServiceGroups[0].Servers[0].Name != "primary-as" {
-		t.Fatalf("AS group server = %q, want primary-as", got[1].ServiceGroups[0].Servers[0].Name)
+	if got[1].Groups[0].Servers[0].Name != "primary-as" {
+		t.Fatalf("AS group server = %q, want primary-as", got[1].Groups[0].Servers[0].Name)
 	}
 }
 
-func TestRenderClusterViewsRetainEmptyAndUnknownServers(t *testing.T) {
+func TestRenderClusterDashboardRetainsEmptyAndUnknownServers(t *testing.T) {
 	servers := []Server{
 		{
 			Name:     "mixed",
-			Cluster:  Cluster{ClusterID: 7, ClusterRole: "primary"},
-			Services: []Service{{ServiceType: AS, State: SvcNormal}, {ServiceType: ServiceType("XX"), State: SvcNormal}},
+			Cluster:  Cluster{ClusterID: 7, ClusterRole: PrimaryClusterRole},
+			Services: []Service{{ServiceType: ASType, State: ServiceNormal}, {ServiceType: ServiceType("XX"), State: ServiceNormal}},
 		},
-		{Name: "nil-services", Cluster: Cluster{ClusterID: 7, ClusterRole: "primary"}},
-		{Name: "empty-services", Cluster: Cluster{ClusterID: 7, ClusterRole: "primary"}, Services: []Service{}},
+		{Name: "nil-services", Cluster: Cluster{ClusterID: 7, ClusterRole: PrimaryClusterRole}},
+		{Name: "empty-services", Cluster: Cluster{ClusterID: 7, ClusterRole: PrimaryClusterRole}, Services: []Service{}},
 	}
 
 	nested := RenderClusterDashboard(servers)
-	if len(nested) != 1 || len(nested[0].ServiceGroups) != 2 {
+	if len(nested) != 1 || len(nested[0].Groups) != 2 {
 		t.Fatalf("nested result = %#v, want one cluster with unknown and no-service groups", nested)
 	}
-	if nested[0].ServiceGroups[0].ServiceType != UnknownServiceType ||
-		len(nested[0].ServiceGroups[0].Servers) != 1 ||
-		nested[0].ServiceGroups[0].Servers[0].Name != "mixed" {
-		t.Errorf("unknown service group = %#v", nested[0].ServiceGroups[0])
+	if nested[0].Groups[0].Name != unknownServiceGroupName ||
+		len(nested[0].Groups[0].Servers) != 1 ||
+		nested[0].Groups[0].Servers[0].Name != "mixed" {
+		t.Errorf("unknown service group = %#v", nested[0].Groups[0])
 	}
-	if nested[0].ServiceGroups[1].ServiceType != NoServiceType ||
-		len(nested[0].ServiceGroups[1].Servers) != 2 {
-		t.Errorf("no-service group = %#v, want both empty service servers", nested[0].ServiceGroups[1])
+	if nested[0].Groups[1].Name != noServiceGroupName ||
+		len(nested[0].Groups[1].Servers) != 2 {
+		t.Errorf("no-service group = %#v, want both empty service servers", nested[0].Groups[1])
 	}
 
-	flat := RenderClusterFlatDashboard(servers)
-	if len(flat) != 1 || len(flat[0].UnknownServices) != 1 || len(flat[0].NoService) != 2 {
-		t.Fatalf("flat result = %#v, want unknown=1 and no-service=2", flat)
+	encoded, err := MarshalClusterDashboard(servers, RulePrimaryService, JSONFlat)
+	if err != nil {
+		t.Fatalf("MarshalClusterDashboard() error: %v", err)
 	}
-	total := len(flat[0].UnknownServices) + len(flat[0].NoService)
-	for _, group := range [][]Server{flat[0].AS, flat[0].TS, flat[0].SS, flat[0].DS} {
-		total += len(group)
+	var flat []struct {
+		ClusterID int      `json:"cluster_id"`
+		Group     string   `json:"group"`
+		Servers   []Server `json:"servers"`
+	}
+	if err := json.Unmarshal(encoded, &flat); err != nil {
+		t.Fatalf("decode flat JSON: %v", err)
+	}
+	if len(flat) != 2 || flat[0].Group != unknownServiceGroupName || flat[1].Group != noServiceGroupName {
+		t.Fatalf("flat rows = %#v, want unknown then no-service rows", flat)
+	}
+	total := 0
+	for _, row := range flat {
+		total += len(row.Servers)
 	}
 	if total != len(servers) {
 		t.Errorf("flat view retained %d servers, want %d", total, len(servers))
 	}
+}
 
-	encoded, err := json.Marshal(flat[0])
-	if err != nil {
-		t.Fatalf("json.Marshal() error: %v", err)
+func TestRenderClusterDashboardByRuleAppliesAllRules(t *testing.T) {
+	servers := []Server{
+		{Name: "as-ts", Cluster: Cluster{ClusterID: 1}, Services: []Service{{ServiceType: ASType}, {ServiceType: TSType}}},
+		{Name: "as", Cluster: Cluster{ClusterID: 1}, Services: []Service{{ServiceType: ASType}}},
+		{Name: "ts", Cluster: Cluster{ClusterID: 1}, Services: []Service{{ServiceType: TSType}}},
 	}
-	if !bytes.Contains(encoded, []byte(`"unknown_services":[`)) || !bytes.Contains(encoded, []byte(`"no_service":[`)) {
-		t.Errorf("flat JSON omitted special server groups: %s", encoded)
+	rules := []GroupRule{
+		RuleExactCombination,
+		RuleExactServiceCount,
+		RuleExactPrimary,
+		RuleExactConvention,
+		RulePrimaryService,
+	}
+	for _, rule := range rules {
+		t.Run(rule.String(), func(t *testing.T) {
+			got := RenderClusterDashboardByRule(servers, rule)
+			want := RenderDashboard(servers, rule)
+			if len(got) != 1 || len(got[0].Groups) != len(want) {
+				t.Fatalf("cluster result = %#v, want one cluster with %d groups", got, len(want))
+			}
+			for i := range want {
+				if got[0].Groups[i].Name != want[i].Name {
+					t.Errorf("group[%d] = %q, want %q", i, got[0].Groups[i].Name, want[i].Name)
+				}
+			}
+		})
 	}
 }
 
 func TestRenderClusterDashboardDoesNotMutateServiceOrder(t *testing.T) {
 	servers := []Server{{
 		Name:    "node",
-		Cluster: Cluster{ClusterID: 1, ClusterRole: "primary"},
+		Cluster: Cluster{ClusterID: 1, ClusterRole: PrimaryClusterRole},
 		Services: []Service{
-			{ServiceType: TS, State: SvcNormal},
-			{ServiceType: AS, State: SvcNormal},
+			{ServiceType: TSType, State: ServiceNormal},
+			{ServiceType: ASType, State: ServiceNormal},
 		},
 	}}
 	original := append([]Service(nil), servers[0].Services...)
@@ -130,25 +146,25 @@ func TestRenderClusterDashboardDoesNotMutateServiceOrder(t *testing.T) {
 	if !reflect.DeepEqual(servers[0].Services, original) {
 		t.Fatalf("input Services mutated: got %#v, want %#v", servers[0].Services, original)
 	}
-	if got := result[0].ServiceGroups[0].Servers[0].Services[0].ServiceType; got != AS {
+	if got := result[0].Groups[0].Servers[0].Services[0].ServiceType; got != ASType {
 		t.Errorf("output service order begins with %s, want AS", got)
 	}
 }
 
 func TestRenderClusterDashboardSortsClusterRolesAndUnknownLast(t *testing.T) {
 	servers := []Server{
-		{Name: "unknown", Cluster: Cluster{ClusterID: 1, ClusterRole: "other"}, Services: []Service{{ServiceType: AS}}},
-		{Name: "arbiter", Cluster: Cluster{ClusterID: 4, ClusterRole: "arbiter"}, Services: []Service{{ServiceType: AS}}},
-		{Name: "secondary", Cluster: Cluster{ClusterID: 3, ClusterRole: "secondary"}, Services: []Service{{ServiceType: AS}}},
-		{Name: "primary", Cluster: Cluster{ClusterID: 8, ClusterRole: "primary"}, Services: []Service{{ServiceType: AS}}},
+		{Name: "unknown", Cluster: Cluster{ClusterID: 1, ClusterRole: ClusterRole("other")}, Services: []Service{{ServiceType: ASType}}},
+		{Name: "arbiter", Cluster: Cluster{ClusterID: 4, ClusterRole: ArbiterClusterRole}, Services: []Service{{ServiceType: ASType}}},
+		{Name: "secondary", Cluster: Cluster{ClusterID: 3, ClusterRole: SecondaryClusterRole}, Services: []Service{{ServiceType: ASType}}},
+		{Name: "primary", Cluster: Cluster{ClusterID: 8, ClusterRole: PrimaryClusterRole}, Services: []Service{{ServiceType: ASType}}},
 	}
 
 	groups := RenderClusterDashboard(servers)
-	got := make([]string, len(groups))
+	got := make([]ClusterRole, len(groups))
 	for i, group := range groups {
 		got[i] = group.ClusterRole
 	}
-	want := []string{"primary", "secondary", "arbiter", "other"}
+	want := []ClusterRole{PrimaryClusterRole, SecondaryClusterRole, ArbiterClusterRole, ClusterRole("other")}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("cluster role order = %v, want %v", got, want)
 	}

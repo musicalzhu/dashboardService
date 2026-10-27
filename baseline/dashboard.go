@@ -5,13 +5,6 @@ import (
 	"slices"
 )
 
-const (
-	noServiceGroupName      = "无服务"
-	unknownServiceGroupName = "未知服务"
-	unknownServiceGroupKey  = -1
-	noServiceGroupKey       = -2
-)
-
 // KeyFunc 根据服务器计算分组键。
 type KeyFunc func(Server) int
 

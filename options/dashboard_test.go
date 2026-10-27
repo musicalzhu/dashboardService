@@ -76,10 +76,10 @@ func TestFunctionalOptionsAreUsableOutsidePackage(t *testing.T) {
 
 func comparisonServers() []baseline.Server {
 	return []baseline.Server{
-		{Name: "as", Services: []baseline.Service{{ServiceType: baseline.AS}}},
-		{Name: "ts", Services: []baseline.Service{{ServiceType: baseline.TS}}},
-		{Name: "ss", Services: []baseline.Service{{ServiceType: baseline.SS}}},
-		{Name: "ds", Services: []baseline.Service{{ServiceType: baseline.DS}}},
+		{Name: "as", Services: []baseline.Service{{ServiceType: baseline.ASType}}},
+		{Name: "ts", Services: []baseline.Service{{ServiceType: baseline.TSType}}},
+		{Name: "ss", Services: []baseline.Service{{ServiceType: baseline.SSType}}},
+		{Name: "ds", Services: []baseline.Service{{ServiceType: baseline.DSType}}},
 	}
 }
 

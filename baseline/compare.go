@@ -6,11 +6,6 @@ import (
 	"slices"
 )
 
-const (
-	roleSS Role = "ss"
-	roleDS Role = "ds"
-)
-
 // prepareServer 克隆 Services 后按服务优先级排序，避免修改调用方切片。
 func prepareServer(server Server) Server {
 	server.Services = slices.Clone(server.Services)
@@ -65,11 +60,11 @@ func compareState(a, b State) int {
 	)
 }
 
-func compareRole(a, b Role) int {
+func compareRole(a, b ServiceRole) int {
 	if a == b {
 		return 0
 	}
-	rank := func(role Role) int {
+	rank := func(role ServiceRole) int {
 		switch role {
 		case Leader:
 			return 0
@@ -77,9 +72,9 @@ func compareRole(a, b Role) int {
 			return 1
 		case LSS:
 			return 2
-		case roleSS:
+		case SSRole:
 			return 3
-		case roleDS:
+		case DSRole:
 			return 4
 		default:
 			return 5

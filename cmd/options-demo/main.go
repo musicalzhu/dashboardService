@@ -19,10 +19,10 @@ func main() {
 	}
 
 	servers := []baseline.Server{
-		{Name: "as-node", Services: []baseline.Service{{ServiceType: baseline.AS, State: baseline.SvcNormal}}},
-		{Name: "ts-node", Services: []baseline.Service{{ServiceType: baseline.TS, State: baseline.SvcNormal}}},
+		{Name: "as-node", Services: []baseline.Service{{ServiceType: baseline.ASType, State: baseline.ServiceNormal}}},
+		{Name: "ts-node", Services: []baseline.Service{{ServiceType: baseline.TSType, State: baseline.ServiceNormal}}},
 		{Name: "unknown-service-node", Services: []baseline.Service{
-			{ServiceType: baseline.ServiceType("XX"), State: baseline.SvcNormal},
+			{ServiceType: baseline.ServiceType("XX"), State: baseline.ServiceNormal},
 		}},
 		{Name: "no-service-node"},
 	}
