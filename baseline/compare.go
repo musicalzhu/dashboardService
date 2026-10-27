@@ -9,8 +9,13 @@ import (
 )
 
 var (
-	// servicePriority 按服务展示顺序排列；未登记的服务类型排在已知类型之后。
-	servicePriority = buildServicePriority()
+	// servicePriority 定义服务类型优先级；值越小优先级越高。
+	servicePriority = map[ServiceType]int{
+		ASType: 0,
+		TSType: 1,
+		SSType: 2,
+		DSType: 3,
+	}
 
 	// statePriority 定义服务器状态顺序；其他状态值排在已知状态之后。
 	statePriority = map[State]int{
@@ -40,16 +45,8 @@ var (
 	}
 )
 
-// allServiceTypes 是服务优先级及展示顺序的唯一来源。
+// allServiceTypes 定义服务类型的稳定遍历和展示顺序。
 var allServiceTypes = []ServiceType{ASType, TSType, SSType, DSType}
-
-func buildServicePriority() map[ServiceType]int {
-	priority := make(map[ServiceType]int, len(allServiceTypes))
-	for i, serviceType := range allServiceTypes {
-		priority[serviceType] = i
-	}
-	return priority
-}
 
 // priorityOf 返回配置优先级；未登记的值排在所有已登记值之后。
 func priorityOf[T comparable](priorities map[T]int, value T) int {
@@ -175,7 +172,6 @@ func compareServers(a, b Server) int {
 	return cmp.Or(
 		compareState(a.State, b.State),
 		compareServerServices(a.Services, b.Services),
-		cmp.Compare(len(a.Services), len(b.Services)),
 		cmp.Compare(a.IP, b.IP),
 		cmp.Compare(a.Name, b.Name),
 	)
