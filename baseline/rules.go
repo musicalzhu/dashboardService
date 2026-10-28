@@ -118,6 +118,16 @@ func comboName(mask int) string {
 	return strings.Join(names, "+")
 }
 
+func groupName(key int) string {
+	if key == 0 {
+		return "键 0"
+	}
+	if key > 0 && key <= maxServiceMask {
+		return comboName(key)
+	}
+	return fmt.Sprintf("键 %d", key)
+}
+
 // maskOf 将服务器服务类型合并成完整组合 mask；重复类型自然去重。
 // 举例：服务器含 AS+TS+DS，返回 0b1101；服务器无服务，返回 0b0000。
 func MaskOf(server Server) int {
@@ -201,6 +211,11 @@ func CmpByServiceCount(a, b int) int {
 	)
 }
 
+// CompareByServiceCount 先按服务数量升序，再按 mask 降序比较分组键。
+func CompareByServiceCount(a, b int) int {
+	return CmpByServiceCount(a, b)
+}
+
 // 服务类型分组算法
 // CmpByPrimary 按主服务索引、服务数量、mask 依次排序。
 // 举例：mask 0b1101（AS+TS+DS）排在 mask 0b1001（AS+DS）之后；mask 0b0011（SS+DS）排在 mask 0b0001（DS）之后。
@@ -210,6 +225,11 @@ func CmpByPrimary(a, b int) int {
 		cmp.Compare(bits.OnesCount(uint(a)), bits.OnesCount(uint(b))),
 		cmp.Compare(b, a),
 	)
+}
+
+// CompareByPrimary 按主服务、服务数量和 mask 比较分组键。
+func CompareByPrimary(a, b int) int {
+	return CmpByPrimary(a, b)
 }
 
 // 服务类型分组算法
@@ -228,6 +248,11 @@ func CmpByConvention(a, b int) int {
 	default:
 		return -1
 	}
+}
+
+// CompareByConvention 按业务约定顺序比较分组键。
+func CompareByConvention(a, b int) int {
+	return CmpByConvention(a, b)
 }
 
 // GroupRule 表示一个服务器分组和排序规则。

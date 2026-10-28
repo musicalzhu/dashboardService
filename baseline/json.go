@@ -1,10 +1,8 @@
 package baseline
 
 import (
-	"cmp"
 	"encoding/json"
 	"fmt"
-	"slices"
 )
 
 // JSONFormat 选择 Dashboard JSON 的输出结构。
@@ -58,28 +56,6 @@ func MarshalDashboard(servers []Server, rule GroupRule, format JSONFormat) ([]by
 	}
 }
 
-func groupServersByCluster(servers []Server, group func([]Server) []Group) []ClusterGroup {
-	clusterByID := make(map[int]Cluster)
-	serversByCluster := make(map[int][]Server)
-	for _, server := range servers {
-		clusterID := server.ClusterID
-		if _, exists := clusterByID[clusterID]; !exists {
-			clusterByID[clusterID] = server.Cluster
-		}
-		serversByCluster[clusterID] = append(serversByCluster[clusterID], server)
-	}
-
-	clusters := make([]ClusterGroup, 0, len(clusterByID))
-	for clusterID, cluster := range clusterByID {
-		clusters = append(clusters, ClusterGroup{
-			Cluster: cluster,
-			Groups:  group(serversByCluster[clusterID]),
-		})
-	}
-	slices.SortFunc(clusters, compareClusterGroups)
-	return clusters
-}
-
 func flattenClusterGroups(clusters []ClusterGroup) []flatClusterRow {
 	flat := make([]flatClusterRow, 0)
 	for _, cluster := range clusters {
@@ -92,11 +68,4 @@ func flattenClusterGroups(clusters []ClusterGroup) []flatClusterRow {
 		}
 	}
 	return flat
-}
-
-func compareClusterGroups(a, b ClusterGroup) int {
-	return cmp.Or(
-		cmp.Compare(priorityOf(clusterRolePriority, a.ClusterRole), priorityOf(clusterRolePriority, b.ClusterRole)),
-		cmp.Compare(a.ClusterID, b.ClusterID),
-	)
 }

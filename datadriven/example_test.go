@@ -9,12 +9,12 @@ func ExampleGroupRule_String() {
 	fmt.Println(RuleExactPrimary)
 
 	// Output:
-	// exact-primary
+	// rule-primary
 }
 
 // ExampleParseGroupRule 展示外部规则名称的校验和默认规则解析。
 func ExampleParseGroupRule() {
-	rule, err := ParseGroupRule("primary-service")
+	rule, err := ParseGroupRule("rule-primary-service")
 	if err != nil {
 		fmt.Println("invalid rule:", err)
 		return
@@ -29,8 +29,8 @@ func ExampleParseGroupRule() {
 	fmt.Println(defaultRule)
 
 	// Output:
-	// primary-service
-	// exact-combination
+	// rule-primary-service
+	// rule-combination
 }
 
 // ExampleRenderDashboard 展示未知服务和没有运行服务的服务器都会保留在分组结果中。

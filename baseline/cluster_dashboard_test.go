@@ -109,10 +109,10 @@ func TestRenderDashboardAppliesAllRules(t *testing.T) {
 		{Name: "ts", Cluster: Cluster{ClusterID: 1}, Services: []Service{{ServiceType: TSType}}},
 	}
 	rules := []GroupRule{
-		RuleExactCombination,
-		RuleExactServiceCount,
-		RuleExactPrimary,
-		RuleExactConvention,
+		RuleCombination,
+		RuleServiceCount,
+		RulePrimary,
+		RuleConvention,
 		RulePrimaryService,
 	}
 	for _, rule := range rules {
@@ -149,7 +149,6 @@ func TestRenderDashboardDoesNotMutateServiceOrder(t *testing.T) {
 func TestRenderDashboardSortsClusterRolesAndUnknownLast(t *testing.T) {
 	servers := []Server{
 		{Name: "unknown", Cluster: Cluster{ClusterID: 1, ClusterRole: ClusterRole("other")}, Services: []Service{{ServiceType: ASType}}},
-		{Name: "arbiter", Cluster: Cluster{ClusterID: 4, ClusterRole: ArbiterClusterRole}, Services: []Service{{ServiceType: ASType}}},
 		{Name: "secondary", Cluster: Cluster{ClusterID: 3, ClusterRole: SecondaryClusterRole}, Services: []Service{{ServiceType: ASType}}},
 		{Name: "primary", Cluster: Cluster{ClusterID: 8, ClusterRole: PrimaryClusterRole}, Services: []Service{{ServiceType: ASType}}},
 	}
@@ -159,7 +158,7 @@ func TestRenderDashboardSortsClusterRolesAndUnknownLast(t *testing.T) {
 	for i, group := range groups {
 		got[i] = group.ClusterRole
 	}
-	want := []ClusterRole{PrimaryClusterRole, SecondaryClusterRole, ArbiterClusterRole, ClusterRole("other")}
+	want := []ClusterRole{PrimaryClusterRole, SecondaryClusterRole, ClusterRole("other")}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("cluster role order = %v, want %v", got, want)
 	}

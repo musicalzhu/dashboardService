@@ -31,7 +31,7 @@ func allServiceCombinations() []Server {
 
 // TestEmptyInputReturnsEmptyGroups 验证空输入返回非 nil 空切片。
 func TestEmptyInputReturnsEmptyClusterGroups(t *testing.T) {
-	groups := RenderDashboard(nil, RuleExactCombination)
+	groups := RenderDashboard(nil, RuleCombination)
 	if groups == nil || len(groups) != 0 {
 		t.Fatalf("RenderDashboard(nil, ...) = %#v, want non-nil empty slice", groups)
 	}
@@ -126,13 +126,13 @@ func TestGroupByRejectsReservedNegativeKeys(t *testing.T) {
 func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
 	servers := allServiceCombinations()
 	expectedNames := map[GroupRule][]string{
-		RuleExactCombination: {
+		RuleCombination: {
 			"AS+TS+SS+DS", "AS+TS+SS", "AS+TS+DS", "AS+TS",
 			"AS+SS+DS", "AS+SS", "AS+DS", "AS",
 			"TS+SS+DS", "TS+SS", "TS+DS", "TS",
 			"SS+DS", "SS", "DS",
 		},
-		RuleExactConvention: {
+		RuleConvention: {
 			"AS", "AS+SS", "AS+DS", "AS+SS+DS",
 			"AS+TS", "AS+TS+SS", "AS+TS+DS", "AS+TS+SS+DS",
 			"TS", "TS+SS", "TS+DS", "TS+SS+DS", "SS", "SS+DS", "DS",
@@ -163,21 +163,29 @@ func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
 		})
 	}
 
-	for _, rule := range []GroupRule{RuleExactServiceCount, RuleExactPrimary} {
+	expectedOrder := map[GroupRule][]string{
+		RuleServiceCount: {
+			"AS", "TS", "SS", "DS",
+			"AS+TS", "AS+SS", "AS+DS", "TS+SS",
+			"TS+DS", "SS+DS", "AS+TS+SS", "AS+TS+DS",
+			"AS+SS+DS", "TS+SS+DS", "AS+TS+SS+DS",
+		},
+		RulePrimary: {
+			"AS", "AS+TS", "AS+SS", "AS+DS",
+			"AS+TS+SS", "AS+TS+DS", "AS+SS+DS", "AS+TS+SS+DS",
+			"TS", "TS+SS", "TS+DS", "TS+SS+DS",
+			"SS", "SS+DS", "DS",
+		},
+	}
+	for _, rule := range []GroupRule{RuleServiceCount, RulePrimary} {
 		t.Run(rule.String(), func(t *testing.T) {
 			groups := RenderDashboard(servers, rule)[0].Groups
-			if len(groups) != 15 {
-				t.Fatalf("group count = %d, want 15", len(groups))
+			got := make([]string, len(groups))
+			for i, group := range groups {
+				got[i] = group.Name
 			}
-			seenKeys := make(map[int]bool, len(groups))
-			for _, group := range groups {
-				if seenKeys[group.Key] {
-					t.Errorf("duplicate group key %04b", group.Key)
-				}
-				seenKeys[group.Key] = true
-			}
-			if len(seenKeys) != 15 {
-				t.Errorf("unique group key count = %d, want 15", len(seenKeys))
+			if !reflect.DeepEqual(got, expectedOrder[rule]) {
+				t.Errorf("group order = %v, want %v", got, expectedOrder[rule])
 			}
 		})
 	}
@@ -198,10 +206,10 @@ func TestUnknownServicesIncluded(t *testing.T) {
 		{Name: "empty"},
 	}
 	for _, rule := range []GroupRule{
-		RuleExactCombination,
-		RuleExactServiceCount,
-		RuleExactPrimary,
-		RuleExactConvention,
+		RuleCombination,
+		RuleServiceCount,
+		RulePrimary,
+		RuleConvention,
 		RulePrimaryService,
 	} {
 		t.Run(rule.String(), func(t *testing.T) {
@@ -296,12 +304,12 @@ func TestServersAreSortedWithinGroup(t *testing.T) {
 			want: []string{"ts", "ds"},
 		},
 		{
-			name: "service list length precedes IP after common prefix",
+			name: "IP follows a common service prefix",
 			servers: []Server{
 				{Name: "has-ts", IP: "10.0.0.1", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Leader}, {ServiceType: TSType, Role: Follower}}},
 				{Name: "as-only", IP: "10.0.0.2", State: ServerNormal, Services: []Service{{ServiceType: ASType, Role: Leader}}},
 			},
-			want: []string{"as-only", "has-ts"},
+			want: []string{"has-ts", "as-only"},
 		},
 		{
 			name: "ip",
@@ -358,34 +366,4 @@ func TestInvalidRulePanics(t *testing.T) {
 		}
 	}()
 	RenderDashboard(nil, GroupRule(999))
-}
-
-func TestInvalidRuleStringDoesNotPanic(t *testing.T) {
-	if got := GroupRule(999).String(); got != "GroupRule(999)" {
-		t.Fatalf("GroupRule(999).String() = %q, want %q", got, "GroupRule(999)")
-	}
-}
-
-// TestParseGroupRule 验证规则名称、默认值和未知名称错误。
-func TestParseGroupRule(t *testing.T) {
-	tests := map[string]GroupRule{
-		"":                    RuleExactCombination,
-		"exact-combination":   RuleExactCombination,
-		"exact-service-count": RuleExactServiceCount,
-		"exact-primary":       RuleExactPrimary,
-		"exact-convention":    RuleExactConvention,
-		"primary-service":     RulePrimaryService,
-	}
-	for input, want := range tests {
-		got, err := ParseGroupRule(input)
-		if err != nil {
-			t.Fatalf("ParseGroupRule(%q) error: %v", input, err)
-		}
-		if got != want {
-			t.Errorf("ParseGroupRule(%q) = %v, want %v", input, got, want)
-		}
-	}
-	if _, err := ParseGroupRule("invalid"); err == nil {
-		t.Error("未知规则应返回错误")
-	}
 }

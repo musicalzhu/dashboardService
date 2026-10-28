@@ -12,11 +12,11 @@
 | --- | --- |
 | [`dashboard.go`](./dashboard.go) | 私有单层分组骨架、集群聚合 `GroupBy` 及 switch 基线入口 `RenderDashboard` |
 | [`model.go`](./model.go) | baseline 自有领域模型及 dashboard 输出结构 |
-| [`rules.go`](./rules.go) | 规则常量、名称解析和 `String` |
-| [`compare.go`](./compare.go) | 排序优先级配置、服务 mask、Services 预处理、组内/组间比较器 |
+| [`rules.go`](./rules.go) | 规则常量、名称解析、服务 mask、排序优先级、Services 预处理和组内/组间比较器 |
 | [`json.go`](./json.go) | 分组和集群 UI 结构转换、JSON 编码边界 |
 | [`dashboard_test.go`](./dashboard_test.go) | 共享规则行为、边界和排序的唯一权威测试 |
 | [`cluster_dashboard_test.go`](./cluster_dashboard_test.go) | 集群结构、集群排序、未知/无服务保留及输入不可变性测试 |
+| [`rules_test.go`](./rules_test.go) | `GroupRule` 名称转换和解析测试 |
 | [`example_test.go`](./example_test.go) | 可执行的 switch 分组和 JSON 编码示例 |
 
 ## 五种分发方案
@@ -35,12 +35,12 @@
 - `Services` 为空：进入专用的“无服务”组，固定最后。
 - 任意服务类型未知：整台服务器进入专用的“未知服务”组；已知与未知混合时也按未知处理，
   固定在已知组之后、无服务组之前。
-- 组内服务器排序：服务器状态（异常优先）、按 AS→TS→SS→DS 排列的服务类型及服务角色、服务列表长度、IP、Name。
+- 组内服务器排序：服务器状态（异常优先）、按 AS→TS→SS→DS 排列的服务类型及服务角色、IP、Name。
 - 服务器内 Services 排序：先克隆，再按 AS→TS→SS→DS 整理，不修改调用方输入。
 
 服务器状态优先级为 abnormal→normal→其他值；服务列表按类型顺序比较，同类型再按
 Leader→Follower→LSS→SS→DS→其他角色比较。服务状态不参与组内服务器排序；服务类型/角色的共同前缀
-比较完成后，以服务列表长度作确定性次级顺序，再按 IP、Name 排序。
+比较完成后直接按 IP、Name 排序。
 
 ## 集群 Dashboard 输出
 
@@ -56,7 +56,7 @@ Leader→Follower→LSS→SS→DS→其他角色比较。服务状态不参与�
 | `MarshalDashboard(servers, rule, JSONNested)` | `[]ClusterGroup` | 嵌套集群 JSON |
 | `MarshalDashboard(servers, rule, JSONFlat)` | 集群/分组/服务器组成的平铺条目数组 | 保留集群及规则排序 |
 
-集群结果按 `primary`→`secondary`→`arbiter` 排序，未识别的集群角色排最后，再按 `ClusterID`
+集群结果按 `primary`→`secondary` 排序，未识别的集群角色排最后，再按 `ClusterID`
 升序；相同 ID 的元数据使用输入中首次出现的值。每个集群内部完整复用指定规则的分组及排序结果，
 未知服务和无服务服务器也因此保留。平铺行包含 group 名称，不依赖固定的 AS/TS/SS/DS 字段。
 
