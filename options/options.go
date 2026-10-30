@@ -1,68 +1,61 @@
 package options
 
-import (
-	"errors"
-	"fmt"
+import "dashboardService/baseline"
 
-	"dashboardService/baseline"
-)
+// Option 修改一个 RuleImpl。返回 Option 而非直接修改，
+// 是为了让调用方可以用 opts ...Option 的形式表达"配置的组合过程"。
+//
+// 为什么是 func(*baseline.RuleImpl) 而非自定义类型：
+//   - 复用 baseline.RuleImpl，避免引入额外的 "Grouping" 类型；
+//   - Option 的产物就是 baseline.RuleImpl，最终直接传给 GroupServersByCluster；
+//   - 与 datadriven 的 ruleImpls 表项类型相同，便于对比。
+type Option func(*baseline.RuleImpl)
 
-// Grouping 保存共享分组流程所需的函数配置。
-// 配置由 NewGrouping 创建后固定，调用方不能通过公开 API 修改。
-type Grouping struct {
-	keyFn baseline.KeyFunc
-	cmpFn baseline.CompareFunc
+// WithKeyOf 设置分组键函数。
+//
+// 举例：
+//
+//	WithKeyOf(baseline.MaskOf)              // 按精确组合归组
+//	WithKeyOf(baseline.PrimaryServiceMask)  // 按主服务归组
+//
+// 传入 nil 是编程错误，会立即 panic（fail-fast，不等 Build 时才发现）。
+func WithKeyOf(fn baseline.KeyFunc) Option {
+	if fn == nil {
+		panic("options.WithKeyOf: KeyFunc 不能为 nil")
+	}
+	return func(r *baseline.RuleImpl) { r.KeyOf = fn }
 }
 
-// Option 配置 Grouping 实例。
-type Option func(*Grouping)
-
-// WithKeyFn 设置分组键计算函数，覆盖默认的完整服务组合 mask。
-func WithKeyFn(fn baseline.KeyFunc) Option {
-	return func(grouping *Grouping) {
-		grouping.keyFn = fn
+// WithCmp 设置组间比较器。
+//
+// 举例：
+//
+//	WithCmp(baseline.CmpByMask)          // mask 降序
+//	WithCmp(baseline.CmpByServiceCount)  // 服务数量升序
+//
+// 传入 nil 是编程错误，会立即 panic。
+func WithCmp(fn baseline.CompareFunc) Option {
+	if fn == nil {
+		panic("options.WithCmp: CompareFunc 不能为 nil")
 	}
+	return func(r *baseline.RuleImpl) { r.Cmp = fn }
 }
 
-// WithCmpFn 设置组间排序比较函数，覆盖默认的 mask 降序。
-func WithCmpFn(fn baseline.CompareFunc) Option {
-	return func(grouping *Grouping) {
-		grouping.cmpFn = fn
+// newRule 把一组 Option 应用到默认配置上，返回最终的 RuleImpl。
+//
+// 默认值：
+//   - KeyOf = baseline.MaskOf     （按精确组合归组）
+//   - Cmp   = baseline.CmpByMask  （mask 降序）
+//
+// 不传任何 Option 时，结果等价于 RuleExactCombination。
+// 后传入的 Option 覆盖先传入的相同字段——这与"选项"的直觉一致。
+func newRule(opts []Option) baseline.RuleImpl {
+	r := baseline.RuleImpl{
+		KeyOf: baseline.MaskOf,
+		Cmp:   baseline.CmpByMask,
 	}
-}
-
-// NewGrouping 创建一个配置固定的分组器。
-// 默认按完整服务组合分组，并按 mask 降序排列，与 baseline 的默认规则一致。
-// nil 选项、nil 键函数或 nil 比较器都会返回错误。
-func NewGrouping(opts ...Option) (*Grouping, error) {
-	grouping := &Grouping{
-		keyFn: baseline.MaskOf,
-		cmpFn: baseline.CompareByMaskDesc,
+	for _, opt := range opts {
+		opt(&r)
 	}
-	for i, option := range opts {
-		if option == nil {
-			return nil, fmt.Errorf("options.NewGrouping: option %d is nil", i)
-		}
-		option(grouping)
-	}
-	if grouping.keyFn == nil {
-		return nil, errors.New("options.NewGrouping: key function is nil")
-	}
-	if grouping.cmpFn == nil {
-		return nil, errors.New("options.NewGrouping: comparator is nil")
-	}
-	return grouping, nil
-}
-
-// Apply 使用已配置的函数执行共享分组、排序及未知服务处理流程。
-func (grouping *Grouping) Apply(servers []Server) []ClusterGroup {
-	if grouping == nil {
-		panic("options.Grouping.Apply: nil Grouping")
-	}
-	return baseline.GroupBy(servers, grouping.keyFn, grouping.cmpFn)
-}
-
-// ParseGroupRule 调用 baseline 解析外部规则名称。
-func ParseGroupRule(value string) (GroupRule, error) {
-	return baseline.ParseGroupRule(value)
+	return r
 }

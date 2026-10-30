@@ -45,10 +45,10 @@ func TestGroupersMatchBaseline(t *testing.T) {
 	)
 
 	rules := []baseline.GroupRule{
-		baseline.RuleExactCombination,
-		baseline.RuleExactServiceCount,
-		baseline.RuleExactPrimary,
-		baseline.RuleExactConvention,
+		baseline.RuleCombination,
+		baseline.RuleServiceCount,
+		baseline.RulePrimary,
+		baseline.RuleConvention,
 		baseline.RulePrimaryService,
 	}
 

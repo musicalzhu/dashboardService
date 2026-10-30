@@ -13,6 +13,7 @@ type ServiceType string
 type ServiceRole string
 
 // ClusterRole 表示集群角色。
+// 常用角色值由 PrimaryClusterRole 和 SecondaryClusterRole 定义。
 type ClusterRole string
 
 const (
@@ -42,7 +43,7 @@ const (
 	noServiceGroupName      = "无服务"
 	unknownServiceGroupName = "未知服务"
 	unknownServiceGroupKey  = -1
-	noServiceGroupKey       = -2
+	noServiceGroupKey       = 0
 )
 
 const (
@@ -63,18 +64,22 @@ const (
 	PrimaryClusterRole ClusterRole = "primary"
 	// SecondaryClusterRole 表示从集群。
 	SecondaryClusterRole ClusterRole = "secondary"
-	// ArbiterClusterRole 表示仲裁集群。
-	ArbiterClusterRole ClusterRole = "arbiter"
 )
 
 const (
-	// ServiceNormal 和 ServerNormal 是服务与服务器正常状态的短名称。
-	ServiceNormal = StateNormal
+	// ClusterNormal 表示集群处于正常运行状态。
+	// ServerNormal 表示服务器处于正常运行状态。
+	// ServiceNormal 表示服务处于正常运行状态。
+	ClusterNormal = StateNormal
 	ServerNormal  = StateNormal
+	ServiceNormal = StateNormal
 
-	// ServiceAbnormal 和 ServerAbnormal 是服务与服务器异常状态的短名称。
-	ServiceAbnormal = StateAbnormal
+	// ClusterAbnormal 表示集群处于异常状态。
+	// ServerAbnormal 表示服务器处于异常状态。
+	// ServiceAbnormal 表示服务处于异常状态。
+	clusterAbnormal = StateAbnormal
 	ServerAbnormal  = StateAbnormal
+	ServiceAbnormal = StateAbnormal
 )
 
 // Cluster 描述集群的身份信息和角色信息。
@@ -85,8 +90,11 @@ type Cluster struct {
 	ClusterRole ClusterRole `json:"cluster_role"`
 	// ClusterName 是面向展示的集群名称。
 	ClusterName string `json:"cluster_name"`
+	// State 是集群整体运行状态。
+	State State `json:"state"`
 }
 
+// 领域模型定义了服务器、服务和集群的基本结构，以及它们之间的关系。
 // Server 描述一台服务器及其所属集群和运行的服务。
 type Server struct {
 	// Name 是服务器名称。
@@ -127,3 +135,20 @@ type ClusterGroup struct {
 	// Groups 是该集群下按分组规则和组间顺序排列的分组。
 	Groups []Group `json:"groups"`
 }
+
+// KeyFunc 根据服务器计算分组键。
+type KeyFunc func(Server) int
+
+// CompareFunc 按 slices.SortFunc 约定比较两个分组键。
+type CompareFunc func(a, b int) int
+
+// ruleImpl 封装分组键函数和比较器，用于分组规则的分发。
+type RuleImpl struct {
+	KeyOf KeyFunc
+	Cmp   CompareFunc
+}
+
+// GroupRule 表示一个服务器分组和排序规则。
+// 前四种规则，服务器按服务组合分组，规定了分组之间的顺序；
+// 最后一种规则，服务器只是按最高优先级的主服务分组，规定了主服务之间的顺序。
+type GroupRule int

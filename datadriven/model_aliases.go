@@ -58,3 +58,15 @@ const (
 	// Follower 是 baseline.Follower 的别名。
 	Follower = baseline.Follower
 )
+
+// GroupRule 复用 baseline 的规则类型，使各 POC 的规则标识保持一致。
+type GroupRule = baseline.GroupRule
+
+// RuleExactCombination 是 datadriven 方案的规则标识，复用 baseline 的规则值。
+const (
+	RuleExactCombination  = baseline.RuleCombination
+	RuleExactServiceCount = baseline.RuleServiceCount
+	RuleExactPrimary      = baseline.RulePrimary
+	RuleExactConvention   = baseline.RuleConvention
+	RulePrimaryService    = baseline.RulePrimaryService
+)

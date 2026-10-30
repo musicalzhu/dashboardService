@@ -37,12 +37,6 @@ var (
 		PrimaryClusterRole:   0,
 		SecondaryClusterRole: 1,
 	}
-
-	// specialGroupPriority 只登记特殊组；值越小优先级越高，普通组默认优先级为 0 排在所有特殊组之前，未知服务组排在无服务组之前。
-	specialGroupPriority = map[int]int{
-		unknownServiceGroupKey: 1,
-		noServiceGroupKey:      2,
-	}
 )
 
 // allServiceTypes 定义服务类型的稳定遍历和展示顺序。
@@ -118,20 +112,37 @@ func comboName(mask int) string {
 	return strings.Join(names, "+")
 }
 
+// groupName 返回给定 key 对应的组名称。
+// 举例：key 为 unknownServiceGroupKey 返回 "未知服务组"；key 为 noServiceGroupKey 返回 "无服务组"；key 为 0 返回 "键 0"；key 为 0b1101 返回 "AS+TS+DS"。
+// 返回的组名称用于在 UI 中显示，便于用户识别不同服务组合。
 func groupName(key int) string {
-	if key == 0 {
-		return "键 0"
+	switch key {
+	case unknownServiceGroupKey:
+		return unknownServiceGroupName
+	case noServiceGroupKey:
+		return noServiceGroupName
 	}
-	if key > 0 && key <= maxServiceMask {
+	if key <= maxServiceMask {
 		return comboName(key)
 	}
 	return fmt.Sprintf("键 %d", key)
 }
 
 // maskOf 将服务器服务类型合并成完整组合 mask；重复类型自然去重。
-// 举例：服务器含 AS+TS+DS，返回 0b1101；服务器无服务，返回 0b0000。
+// 举例：服务器含 AS+TS+DS，返回 0b1101；
 func MaskOf(server Server) int {
 	mask := 0
+
+	// 无服务与未知服务拥有自己的组键，必须在计算服务分组键前识别。
+	if len(server.Services) == 0 {
+		return noServiceGroupKey
+	}
+
+	if hasUnknownService(server) {
+		return unknownServiceGroupKey
+	}
+
+	// 服务类型合并成完整组合 mask
 	for _, service := range server.Services {
 		mask |= serviceBit[service.ServiceType]
 	}
@@ -167,6 +178,13 @@ func prepareServer(server Server) Server {
 	return server
 }
 
+func compareClusters(a, b ClusterGroup) int {
+	return cmp.Or(
+		cmp.Compare(priorityOf(clusterRolePriority, a.ClusterRole), priorityOf(clusterRolePriority, b.ClusterRole)),
+		cmp.Compare(a.ClusterID, b.ClusterID),
+	)
+}
+
 // compareServers 服务器之间排序，按状态、服务类型/角色序列、IP、Name 排序。
 // 举例：状态 Abnormal 排在 Normal 前；服务 AS+TS 排在 AS+DS 前；IP 192.168.1.1 排在 192.168.1.2 前。
 func compareServers(a, b Server) int {
@@ -195,9 +213,9 @@ func compareServerServices(a, b []Service) int {
 }
 
 // 服务类型分组算法
-// CompareByMaskDesc 按 mask 降序比较分组键。
+// CmpByMask 按 mask 降序比较分组键。
 // 举例：mask 0b1101（AS+TS+DS）排在 mask 0b1001（AS+DS）之后；mask 0b0011（SS+DS）排在 mask 0b0001（DS）之后。
-func CompareByMaskDesc(a, b int) int {
+func CmpByMask(a, b int) int {
 	return cmp.Compare(b, a)
 }
 
@@ -211,11 +229,6 @@ func CmpByServiceCount(a, b int) int {
 	)
 }
 
-// CompareByServiceCount 先按服务数量升序，再按 mask 降序比较分组键。
-func CompareByServiceCount(a, b int) int {
-	return CmpByServiceCount(a, b)
-}
-
 // 服务类型分组算法
 // CmpByPrimary 按主服务索引、服务数量、mask 依次排序。
 // 举例：mask 0b1101（AS+TS+DS）排在 mask 0b1001（AS+DS）之后；mask 0b0011（SS+DS）排在 mask 0b0001（DS）之后。
@@ -225,11 +238,6 @@ func CmpByPrimary(a, b int) int {
 		cmp.Compare(bits.OnesCount(uint(a)), bits.OnesCount(uint(b))),
 		cmp.Compare(b, a),
 	)
-}
-
-// CompareByPrimary 按主服务、服务数量和 mask 比较分组键。
-func CompareByPrimary(a, b int) int {
-	return CmpByPrimary(a, b)
 }
 
 // 服务类型分组算法
@@ -249,16 +257,6 @@ func CmpByConvention(a, b int) int {
 		return -1
 	}
 }
-
-// CompareByConvention 按业务约定顺序比较分组键。
-func CompareByConvention(a, b int) int {
-	return CmpByConvention(a, b)
-}
-
-// GroupRule 表示一个服务器分组和排序规则。
-// 前四种规则，服务器按服务组合分组，规定了分组之间的顺序；
-// 最后一种规则，服务器只是按最高优先级的主服务分组，规定了主服务之间的顺序。
-type GroupRule int
 
 const (
 	// RuleCombination 按完整组合 mask 降序排列。

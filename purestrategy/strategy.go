@@ -23,11 +23,11 @@ type Grouper interface {
 //
 // 此 map 是 POC 注册表，调用方应只读；不要在运行期间修改。
 var Groupers = map[baseline.GroupRule]Grouper{
-	baseline.RuleExactCombination:  exactCombination{},
-	baseline.RuleExactServiceCount: exactServiceCount{},
-	baseline.RuleExactPrimary:      exactPrimary{},
-	baseline.RuleExactConvention:   exactConvention{},
-	baseline.RulePrimaryService:    primaryService{},
+	baseline.RuleCombination:    exactCombination{},
+	baseline.RuleServiceCount:   exactServiceCount{},
+	baseline.RulePrimary:        exactPrimary{},
+	baseline.RuleConvention:     exactConvention{},
+	baseline.RulePrimaryService: primaryService{},
 }
 
 // RenderDashboard 通过规则注册表选择策略并运行。
