@@ -1,4 +1,4 @@
-package closure
+package decorator
 
 import (
 	"fmt"
@@ -9,13 +9,14 @@ import (
 
 // 五个预定义规则：每个都是构造时冻结了 keyOf/cmp 的 Grouper。
 //
-// 与 datadriven.ruleImpls、options 预定义选项组一一对等：
+// 与 datadriven.ruleImpls、options 预定义选项组、builder 预定义构造器一一对等：
 //
 //	datadriven: RuleImpl{KeyOf: MaskOf, Cmp: CmpByMask}
 //	options:    []Option{WithKeyOf(MaskOf), WithCmp(CmpByMask)}
-//	closure:    makeGrouper(MaskOf, CmpByMask)
+//	builder:    New().WithKeyOf(MaskOf).WithCmp(CmpByMask)
+//	decorator:  makeGrouper(MaskOf, CmpByMask)
 //
-// 三者最终传给 GroupServersByCluster 的配置相同，输出完全一致。
+// 四者最终传给 GroupServersByCluster 的配置相同，输出完全一致。
 var (
 	// ExactCombination 精确组合 + mask 降序。
 	ExactCombination = makeGrouper(baseline.MaskOf, baseline.CmpByMask)
@@ -46,12 +47,13 @@ var ruleGroupers = map[GroupRule]Grouper{
 
 // allGroupers 规则名到 Grouper 的映射。
 //
-// 为什么需要它：闭包是函数，无法从字符串直接调用，也无法枚举。
+// 为什么需要它：Grouper 是函数值，无法从字符串直接调用，也无法枚举。
 // API 需要"字符串 → 规则"和"列出所有规则"时，必须维护这个 map。
 //
-// 这个 map 的存在，说明 closure 方案要支持完整 API，
-// 就必须有类似 datadriven 的规则表——这是闭包"不可枚举"弱点的补偿。
-// POC 评审时应诚实指出：closure 不是"零表的方案"，只是"表不是核心，函数才是核心"。
+// 这个 map 的存在，说明 decorator 方案要支持完整 API，
+// 就必须有类似 datadriven 的规则表——这是函数值"不可枚举"弱点的补偿。
+// POC 评审时应诚实指出：decorator 不是"零表的方案"，
+// 只是"表不是核心，函数和装饰器才是核心"。
 var allGroupers = map[string]Grouper{
 	"rule-combination":     ExactCombination,
 	"rule-service-count":   ExactServiceCount,
@@ -66,7 +68,7 @@ var allGroupers = map[string]Grouper{
 func ByRule(rule GroupRule) Grouper {
 	g, ok := ruleGroupers[rule]
 	if !ok {
-		panic(fmt.Sprintf("closure.ByRule: 无效的 GroupRule %d", int(rule)))
+		panic(fmt.Sprintf("decorator.ByRule: 无效的 GroupRule %d", int(rule)))
 	}
 	return g
 }
@@ -81,7 +83,7 @@ func Parse(value string) (Grouper, error) {
 	}
 	g, ok := allGroupers[value]
 	if !ok {
-		return nil, fmt.Errorf("closure.Parse: 未知分组规则 %q", value)
+		return nil, fmt.Errorf("decorator.Parse: 未知分组规则 %q", value)
 	}
 	return g, nil
 }
@@ -89,7 +91,7 @@ func Parse(value string) (Grouper, error) {
 // Names 返回所有规则名称（稳定顺序）。
 //
 // 用于 API 文档、前端下拉框等需要"列出所有规则"的场景。
-// 枚举能力是 closure 相对"纯闭包"的额外设施，必须显式维护。
+// 枚举能力是 decorator 相对"纯函数值"的额外设施，必须显式维护。
 func Names() []string {
 	names := make([]string, 0, len(allGroupers))
 	for name := range allGroupers {

@@ -1,4 +1,10 @@
-package closure
+// Package decorator 实现 POC 方案四：装饰器（Decorator）。
+//
+// 核心思想：
+//   - 规则是"一等函数"——每个规则是构造时冻结了 keyOf/cmp 的 Grouper。
+//   - 规则可被装饰器包装，且互不影响（只给某个规则加日志/缓存/容错）。
+//   - 所有分组、排序、序列化行为仍由 baseline 包实现和测试，本包只负责"构造规则"。
+package decorator
 
 import "dashboardService/baseline"
 
@@ -26,7 +32,7 @@ type Server = baseline.Server
 // GroupRule 复用 baseline 的规则类型，使各 POC 方案的规则标识保持一致。
 type GroupRule = baseline.GroupRule
 
-// GroupRule 常量别名：与 datadriven / options 保持一致，便于四个方案横向对比。
+// GroupRule 常量别名：与 datadriven / options / builder 保持一致，便于五个方案横向对比。
 const (
 	// RuleExactCombination 精确组合 + mask 降序。
 	RuleExactCombination = baseline.RuleCombination

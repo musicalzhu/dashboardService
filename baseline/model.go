@@ -1,4 +1,21 @@
+// Package baseline 实现 POC 方案一：基线（Baseline）。
+//
+// 核心思想：
+//   - 这是整个 POC 的基线实现，也是所有其他方案的参考标准。
+//   - 本包提供 POC 共享的领域模型（Server、Service、Cluster、Group、ClusterGroup）
+//     和共享的分组流程（GroupServersByCluster、groupBy）。
+//   - 规则通过朴素 switch 分发：RenderDashboard 的 switch 中每个 case
+//     直接返回一个 RuleImpl，交给 GroupServersByCluster 执行。
+//
+// 本包在整个 POC 中的定位：
+//   - 提供"正确结果"的参考标准——所有其他方案必须与 baseline 输出完全一致。
+//   - 提供共享代码（模型、比较器、分组骨架），使 POC 各方案的差异聚焦于
+//     "规则如何构造"和"规则如何分发"，而不是"分组逻辑如何实现"。
+//   - 本身是最简实现：不引入 map、Option、Grouper 等抽象，只用一个 switch 分发。
+//     其它方案的对比价值，以它作为"零抽象基线"来衡量。
 package baseline
+
+// 领域模型定义了服务器、服务和集群的基本结构，以及它们之间的关系。
 
 // State 表示服务器或服务的运行状态。
 // 状态以字符串形式参与 JSON 序列化；常用值由 StateNormal 和 StateAbnormal 提供。

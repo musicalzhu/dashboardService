@@ -1,3 +1,12 @@
+// Package datadriven 实现 POC 方案二：数据驱动（Data-Driven）。
+//
+// 核心思想：
+//   - 规则不是写在 switch 分支中，而是以"表"的形式集中声明：
+//     ruleImpls map[GroupRule]RuleImpl。
+//   - 入口 RenderDashboard 从 ruleImpls 表中查一个 RuleImpl，
+//     再委托 baseline.GroupServersByCluster 执行。
+//   - 与 baseline 的唯一差异是"规则存储方式"：switch 分支 vs map 表项。
+//   - 规则的可读性、可枚举性、可测试性都由"表"承载，而不是"分支"。
 package datadriven
 
 import "dashboardService/baseline"

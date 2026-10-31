@@ -1,16 +1,17 @@
-package closure
+package decorator
 
 import "time"
 
 // ============================================================================
-// 装饰器：closure 方案相对其他三个方案的独特能力
+// 装饰器：decorator 方案相对其他四个方案的独特能力
 // ============================================================================
 //
-// 为什么只有 closure 能优雅支持：
+// 为什么只有 decorator 能优雅支持：
 //   - baseline/datadriven 要给某个规则加缓存，必须在 RenderDashboard 里加 if 判断，
 //     污染通用分发逻辑；
 //   - options 的 Option 是"配置"，无法承载"包装一个可执行函数"的语义；
-//   - closure 的规则本身就是函数，可以被任意装饰器包装，且互不影响。
+//   - builder 的 Builder 是"配置构造器"，没有"运行时包装"的概念；
+//   - 只有 decorator 的规则本身就是函数，可以被装饰器包装，且互不影响。
 //
 // 实现说明：
 //   - Decorator = func(Grouper) Grouper，因为 Decorator 要"接收一个 Grouper，返回包装后的 Grouper"。

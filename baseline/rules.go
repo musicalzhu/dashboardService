@@ -198,12 +198,17 @@ func compareServers(a, b Server) int {
 
 // compareServerServices 按序比较服务器的服务类型和角色。
 // 举例：服务 AS+TS 排在 AS+DS 前；服务 TS+SS 排在 TS+DS 前；服务 AS+TS 与 AS+TS 相等。
+// 服务类型相同但角色不同的情况下，按角色优先级排序；举例：服务 AS Leader 排在 AS 前。
 func compareServerServices(a, b []Service) int {
 	// 逐个比较服务类型和角色，直到发现不同或比较完毕。
 	for i := 0; i < min(len(a), len(b)); i++ {
 		serviceA, serviceB := a[i], b[i]
 		if c := cmp.Or(
+			// 按服务类型优先级排序，优先级低的排在前面。
+			// 举例：服务 AS 排在 TS 前，TS 排在 SS 前，SS 排在 DS 前。
 			cmp.Compare(priorityOf(servicePriority, serviceA.ServiceType), priorityOf(servicePriority, serviceB.ServiceType)),
+			// 按服务角色优先级排序，优先级低的排在前面。
+			// 举例：服务 AS Leader 排在 AS Follower 前， LSS 排在 SS 前。
 			cmp.Compare(priorityOf(rolePriority, serviceA.Role), priorityOf(rolePriority, serviceB.Role)),
 		); c != 0 {
 			return c

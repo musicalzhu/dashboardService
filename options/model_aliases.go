@@ -1,3 +1,12 @@
+// Package options 实现 POC 方案三：函数式选项（Functional Options）。
+//
+// 核心思想：
+//   - 分组规则由一系列 Option 函数构造，而不是从预定义表中查表：
+//     RenderDashboard(servers, WithKeyOf(...), WithCmp(...))。
+//   - Option 是 func(*baseline.RuleImpl)，每个 Option 修改 RuleImpl 的一个字段。
+//   - 调用方可以自由组合 keyOf 和 cmp，构造出 ruleImpls 表中不存在的规则组合
+//     （如"主服务归组 + 服务数量升序"）。
+//   - 所有分组、排序、序列化行为仍由 baseline 包实现和测试，本包只负责"构造配置"。
 package options
 
 import "dashboardService/baseline"
