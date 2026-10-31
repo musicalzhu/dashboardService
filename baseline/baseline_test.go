@@ -479,3 +479,37 @@ func TestAllRulesPreserveTheExpectedGroupingSemantics(t *testing.T) {
 		})
 	}
 }
+
+// TestCompareServers_RoleOrder 验证组内服务器按角色优先级排序。
+//
+// 五台服务器具有相同的服务组合（AS），但角色不同：
+// Leader(0) < Follower(1) < LSS(2) < SSRole(3) < DSRole(4)。
+//
+// 服务器 IP 故意设置为与角色顺序相反，用于证明排序依据是角色而非 IP。
+func TestCompareServers_RoleOrder(t *testing.T) {
+	servers := RoleVariations()
+	clusters := RenderDashboard(servers, RuleCombination)
+
+	// 所有服务器应归入同一集群、同一分组（AS）
+	if len(clusters) != 1 {
+		t.Fatalf("集群数 = %d, want 1", len(clusters))
+	}
+	if len(clusters[0].Groups) != 1 {
+		t.Fatalf("分组数 = %d, want 1", len(clusters[0].Groups))
+	}
+
+	group := clusters[0].Groups[0]
+	if group.Name != "AS" {
+		t.Fatalf("分组名 = %q, want \"AS\"", group.Name)
+	}
+
+	// 预期顺序：Leader → Follower → LSS → SSRole → DSRole
+	wantNames := []string{"as-leader", "as-follower", "as-lss", "as-ss", "as-ds"}
+	gotNames := make([]string, len(group.Servers))
+	for i, s := range group.Servers {
+		gotNames[i] = s.Name
+	}
+	if !reflect.DeepEqual(gotNames, wantNames) {
+		t.Errorf("角色排序错误\n got:  %v\n want: %v", gotNames, wantNames)
+	}
+}
