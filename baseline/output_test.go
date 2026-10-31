@@ -1,4 +1,4 @@
-// baseline/flat_test.go
+// baseline/output_test.go
 
 package baseline
 

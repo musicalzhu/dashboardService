@@ -83,7 +83,7 @@ UMP 集群拓扑分组展示已实现 **2 种分组排序视图**：
 |---------|---------------|-------------|
 | **调整排序规则** | 改 `compareServers` 1 处 | 每套实现内部，排序逻辑可能与分组逻辑、输出逻辑交织在同一函数中——改排序可能牵动分组、改分组可能影响输出 |
 | **新增分组视图** | 加一个 `switch case`（2 行） | 每套实现新增一套完整逻辑（分组 + 排序 + 输出） |
-| **调整输出格式** | 改 `flat.go` 中的 `Flatten` 1 处 | 每套实现都有独立的输出转换代码，改动点成倍增加 |
+| **调整输出格式** | 改 `output.go` 中的 `Flatten` 1 处 | 每套实现都有独立的输出转换代码，改动点成倍增加 |
 | **增减服务类型** | 改 `allServiceTypes` 1 处 | 两套实现的分组、排序、输出中可能都有硬编码的服务类型判断 |
 | **改通用骨架**（如加日志） | 改 `groupBy` 1 处 | 两套实现各自的骨架都要改，且骨架内部可能有多处重复逻辑 |
 
@@ -521,13 +521,13 @@ poc/
 ├── README.md
 │
 ├── baseline/                 # 方案一：基线（共享模型 + 骨架 + 规则）
-│   ├── model.go
-│   ├── rules.go
-│   ├── dashboard.go
-│   ├── flat.go
-│   ├── flat_test.go
-│   ├── test_helper.go
-│   └── baseline_test.go      
+    ├── dashboard.go     ← 应用层：RenderDashboard（分组）
+    ├── output.go        ← 适配器层：Flatten / FlattenWithPreview（输出）
+    ├── model.go         ← 领域层：领域模型
+    ├── rules.go         ← 领域层：规则定义
+    └── test_helper.go
+│   ├── output_test.go
+│   └── baseline_test.go
 │
 ├── datadriven/               # 方案二：数据驱动
 │   ├── model_aliases.go
@@ -828,7 +828,7 @@ POC 的六个方案不是"孤立的设计选择"，而是多个设计模式的�
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│  适配器层（Adapter Layer）—— flat.go                          │
+│  适配器层（Adapter Layer）—— output.go                          │
 │  Flatten / FlattenWithPreview                                 │
 │  职责：把 []ClusterGroup 转为前端格式（JSON / 平铺 / 截断）    │
 │  依赖：领域层的 ClusterGroup / Group / Server                 │
