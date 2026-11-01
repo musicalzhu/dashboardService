@@ -90,8 +90,16 @@ func primaryIndex(mask int) int {
 }
 
 // primaryMask 返回 mask 中最高优先级服务的单个 bit；空 mask 返回 0。
-// 举例：mask 0b1101 对应 AS+TS+DS，返回 0b1000（AS 的 bit）；mask 0b0000 返回 0。
+// 举例：mask 0b1101 对应 AS+TS+DS，返回 0b1000（AS 的 bit）；
+// mask 0 (无服务组) 返回 0。
+// mask -1（未知服务组）返回 -1。
 func primaryMask(mask int) int {
+
+	// 0 表示无服务组，-1 表示未知服务组，其他值表示已知服务组合。
+	if mask <= 0 {
+		return mask
+	}
+	// 遍历服务类型顺序，返回第一个匹配的 bit。
 	for _, serviceType := range allServiceTypes {
 		if bit := serviceBit[serviceType]; mask&bit != 0 {
 			return bit
@@ -150,7 +158,8 @@ func MaskOf(server Server) int {
 }
 
 // PrimaryServiceMask 返回服务器最高优先级的已知服务对应的 bit；没有已知服务时返回 0。
-// 举例：服务器含 AS+TS+DS，返回 0b1000（AS 的 bit）；服务器无服务，返回 0b0000。
+// 举例：服务器含 AS+TS+DS，返回 0b1000（AS 的 bit）；
+// 服务器无服务，返回 0 （无服务组的 bit）；服务器含未知服务，返回 -1（未知服务组的 bit）。
 func PrimaryServiceMask(server Server) int {
 	mask := MaskOf(server)
 	return primaryMask(mask)
