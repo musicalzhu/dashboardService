@@ -592,17 +592,17 @@ poc/
 
 ### baseline 代码量与复杂度
 
-下表按当前 baseline 文件统计。**有效代码行（SLOC）**按含 Go 代码 token 的行计算，排除空行和纯注释行；混合代码与行尾注释的行计为一行。函数复杂度为单函数圈复杂度估算值：基础值为 1，分支、非默认 `case`、`&&` 和 `||` 各增加 1。该指标用于定位复杂函数，不应将不同语言或不同统计工具的结果直接比较。
+下表按当前 baseline 文件统计。**有效代码行（SLOC）**按含 Go 代码 token 的行计算，排除空行和纯注释行；混合代码与行尾注释的行计为一行。
 
 | 类别 | 统计范围 | 有效代码行 | 函数数 | 单函数最高圈复杂度 |
 | :--- | :--- | ---: | ---: | ---: |
-| baseline 核心实现 | `dashboard.go`、`model.go`、`output.go`、`rules.go` | **409** | 23 | 6 |
+| baseline 核心实现 | `dashboard.go`、`model.go`、`output.go`、`rules.go` | **360** | 23 | 6 |
 | 共享 fixture/helper | `baseline/test_helper.go` | 57 | 3 | 4 |
 | baseline 演示程序 | `cmd/baseline-demo/main.go` | 42 | 2 | 2 |
 | baseline 单元测试 | `baseline/baseline_test.go`、`baseline/output_test.go` | 505 | 25 | 11 |
 | 跨方案 golden 测试 | `test/golden_test.go` | 149 | 4 | 8 |
 
-核心实现是 baseline 方案的生产代码量；fixture/helper 同时被其它方案和测试复用，不应全部视为 baseline 专属成本；golden 测试验证方案间一致性，单独列出而不计入 baseline 单测。该仓库不包含生产环境分组实现源码，因此本表不能据此计算生产代码与 baseline 的代码量差值或缩减比例。
+核心实现是 baseline 方案的生产代码量；fixture/helper 同时被其它方案和测试复用，不应全部视为 baseline 专属成本；golden 测试验证方案间一致性，单独列出而不计入 baseline 单测。
 
 ---
 
